@@ -77,6 +77,8 @@ namespace Cheeeeeeeeese
             NetStream.ReadTimeout = timeout;
             NetStream.WriteTimeout = timeout;
 
+            SendVersion();
+
             NetStream.BeginRead(recvBuf, 0, recvBuf.Length, new AsyncCallback(Receive), this);
         }
 
@@ -129,25 +131,25 @@ namespace Cheeeeeeeeese
         }
 
         [BotMessageHandler(BotMessage.Type.On420)]
-        public void On420(NetworkStream NetStream, List<string> data)
+        public void On420(List<string> data)
         {
             Send(OutgoingMessage.Type.Four20, null);
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomStart)]
-        public void OnRoomStart(NetworkStream NetStream, List<string> data)
+        public void OnRoomStart(List<string> data)
         {
 
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomNoWin)]
-        public void OnRoomNoWin(NetworkStream NetStream, List<string> data)
+        public void OnRoomNoWin(List<string> data)
         {
             Console.WriteLine("Can't win yet");
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomGotCheese)]
-        public void OnRoomGotCheese(NetworkStream NetStream, List<string> data)
+        public void OnRoomGotCheese(List<string> data)
         {
             int id = Int32.Parse(data[0]);
             if (id == UserId)
@@ -158,50 +160,50 @@ namespace Cheeeeeeeeese
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomJoin)]
-        public void OnRoomJoin(NetworkStream NetStream, List<string> data)
+        public void OnRoomJoin(List<string> data)
         {
 
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomPlayers)]
-        public void OnRoomPlayers(NetworkStream NetStream, List<string> data)
+        public void OnRoomPlayers(List<string> data)
         {
             Console.WriteLine("players: " + Username + ", " + String.Join(", ", data.ToArray()));
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomTransform)]
-        public void OnRoomTransform(NetworkStream NetStream, List<string> data)
+        public void OnRoomTransform(List<string> data)
         {
 
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomSync)]
-        public void OnRoomSync(NetworkStream NetStream, List<string> data)
+        public void OnRoomSync(List<string> data)
         {
 
         }
 
         [BotMessageHandler(BotMessage.Type.OnUserLogin)]
-        public void OnUserLogin(NetworkStream NetStream, List<string> data)
+        public void OnUserLogin(List<string> data)
         {
             UserId = Int32.Parse(data[1]);
         }
 
         [BotMessageHandler(BotMessage.Type.OnPing)]
-        public void OnPing(NetworkStream NetStream, List<string> data)
+        public void OnPing(List<string> data)
         {
 
         }
 
         [BotMessageHandler(BotMessage.Type.OnVersion)]
-        public void OnVersion(NetworkStream NetStream, List<string> data)
+        public void OnVersion(List<string> data)
         {
             Console.WriteLine(Username + ": " + data[0] + " players");
             SendLogin(DefaultRoom);
         }
 
         [BotMessageHandler(BotMessage.Type.Default)]
-        public void Default(NetworkStream NetStream, List<string> data)
+        public void Default(List<string> data)
         {
 
         }
