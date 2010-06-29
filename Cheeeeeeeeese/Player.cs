@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using Cheeeeeeeeese.Util;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 
 namespace Cheeeeeeeeese
 {
@@ -28,7 +29,8 @@ namespace Cheeeeeeeeese
         public string Username { get; set; }
         public string Password { get; set; }
         public int UserId { get; set; }
-        public int Level { get; set; }
+        public int UserLevel { get; set; }
+        public string CurrentRoom { get; set; }
 
         public Player(string username, string password, IPEndPoint server)
         {
@@ -80,6 +82,12 @@ namespace Cheeeeeeeeese
             SendVersion();
 
             NetStream.BeginRead(recvBuf, 0, recvBuf.Length, new AsyncCallback(Receive), this);
+
+            while (Connected)
+            {
+                Tick();
+                Thread.Sleep(500);
+            }
         }
 
         public void Receive(IAsyncResult ar)
@@ -139,7 +147,7 @@ namespace Cheeeeeeeeese
         [BotMessageHandler(BotMessage.Type.OnRoomStart)]
         public void OnRoomStart(List<string> data)
         {
-
+            Console.WriteLine(Username + ": start " + String.Join(", ", data.ToArray()));
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomNoWin)]
@@ -162,7 +170,8 @@ namespace Cheeeeeeeeese
         [BotMessageHandler(BotMessage.Type.OnRoomJoin)]
         public void OnRoomJoin(List<string> data)
         {
-
+            CurrentRoom = data[0];
+            Console.WriteLine(Username + ": joined " + CurrentRoom);
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomPlayers)]
@@ -187,6 +196,8 @@ namespace Cheeeeeeeeese
         public void OnUserLogin(List<string> data)
         {
             UserId = Int32.Parse(data[1]);
+            UserLevel = Int32.Parse(data[2]);
+            Console.WriteLine(data[0] + " logged in, " + UserId + ", " + UserLevel);
         }
 
         [BotMessageHandler(BotMessage.Type.OnPing)]
@@ -237,6 +248,8 @@ namespace Cheeeeeeeeese
 
         public void Tick()
         {
+            // this is going to be a pain in the ass to write
+            Console.WriteLine(Username + ": tick");
         }
     }
 }
