@@ -16,7 +16,6 @@ namespace Cheeeeeeeeese
         public const int ServerPort = 44444;
 
         public List<Player> Players { get; set; }
-        public bool Connected { get; set; }
 
         public void AddPlayer(string username, string password, IPEndPoint server)
         {

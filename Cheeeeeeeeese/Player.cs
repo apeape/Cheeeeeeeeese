@@ -15,7 +15,9 @@ namespace Cheeeeeeeeese
     {
         public SortedList<BotMessage.Type, MethodInfo> MessageHandlers;
 
-        public const int timeout = 25000;
+        public const int DefaultDelay = 500;
+
+        public const int Timeout = 25000;
         public const int bufferSize = 65536;
 
         public const string DefaultRoom = "flowerbed";
@@ -61,6 +63,11 @@ namespace Cheeeeeeeeese
 
         public void Run()
         {
+            Run(DefaultDelay);
+        }
+
+        public void Run(int Delay)
+        {
             try
             {
                 TcpClient = new TcpClient(Server.Address.ToString(), Server.Port);
@@ -76,8 +83,8 @@ namespace Cheeeeeeeeese
             Connected = true;
 
             NetStream = TcpClient.GetStream();
-            NetStream.ReadTimeout = timeout;
-            NetStream.WriteTimeout = timeout;
+            NetStream.ReadTimeout = Timeout;
+            NetStream.WriteTimeout = Timeout;
 
             SendVersion();
 
@@ -86,7 +93,7 @@ namespace Cheeeeeeeeese
             while (Connected)
             {
                 Tick();
-                Thread.Sleep(500);
+                Thread.Sleep(Delay);
             }
         }
 
