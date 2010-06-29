@@ -18,7 +18,7 @@ namespace Cheeeeeeeeese
         public const int DefaultDelay = 500;
         public const int Timeout = 10000;
         public const int BufferSize = 65536;
-        public const string DefaultRoom = "11";
+        public const string DefaultRoom = "flowerbed";
 
         public SortedList<IncomingMessage.Type, MethodInfo> MessageHandlers;
         private TcpClient TcpClient;
