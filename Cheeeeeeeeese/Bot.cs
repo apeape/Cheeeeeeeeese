@@ -10,6 +10,7 @@ namespace Cheeeeeeeeese
 {
     public class Bot
     {
+        public const string Version = "0.30\0";
         public const string ServerEn1 = "91.121.157.83";
         public const string ServerEn2 = "91.121.116.13";
         public const int ServerPort = 44444;
@@ -27,7 +28,5 @@ namespace Cheeeeeeeeese
             // start each player in its own thread
             Players.ForEach(player => new Thread(delegate() { player.Run(); }).Start());
         }
-
-
     }
 }

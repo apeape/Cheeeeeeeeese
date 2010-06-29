@@ -17,6 +17,8 @@ namespace Cheeeeeeeeese
         public const int timeout = 25000;
         public const int bufferSize = 65536;
 
+        public const string DefaultRoom = "flowerbed";
+
         private TcpClient TcpClient;
         private NetworkStream NetStream;
         byte[] recvBuf = new byte[bufferSize];
@@ -85,7 +87,7 @@ namespace Cheeeeeeeeese
 
             if (bytesRead > 2)
             {
-                var packets = recvBuf.SplitBytes();
+                var packets = recvBuf.SplitBytes(0);
                 foreach (byte[] packet in packets)
                 {
                     // read packet type
@@ -94,17 +96,19 @@ namespace Cheeeeeeeeese
                     // find the message handler method for this message type
                     var handler = MessageHandlers[(BotMessage.Type)type];
 
+                    var splitPacket = recvBuf.Skip(2).ToUTF8().Split(new string[] {"\x01"}, StringSplitOptions.None);
+
                     if (handler != null)
                     {
                         // found a handler, invoke it
                         Console.WriteLine("received " + Enum.GetName(typeof(BotMessage.Type), type));
-                        handler.Invoke(this, new object[] { recvBuf.Skip(2) });
+                        handler.Invoke(this, new object[] { splitPacket });
                     }
                     else
                     {
                         Console.WriteLine("received unknown packet type " + type.ToString("{0:x2}"));
                         // invoke default handler
-                        MessageHandlers[BotMessage.Type.Default].Invoke(this, new object[] { recvBuf.Skip(2) });
+                        MessageHandlers[BotMessage.Type.Default].Invoke(this, new object[] { splitPacket });
                     }
                 }
             }
@@ -113,82 +117,124 @@ namespace Cheeeeeeeeese
             NetStream.BeginRead(recvBuf, 0, recvBuf.Length, new AsyncCallback(Receive), ar);
         }
 
-        public void Send(BotMessage.Type type, byte[] data)
+        public void Send(OutgoingMessage.Type type, byte[] data)
         {
             var buffer = BitConverter.GetBytes((short)type).Concat(data);
-            NetStream.Write(buffer.ToArray(), 0, buffer.Count());
+            Send(buffer.ToArray());
+        }
+
+        public void Send(byte[] data)
+        {
+            NetStream.Write(data, 0, data.Length);
         }
 
         [BotMessageHandler(BotMessage.Type.On420)]
-        public void On420(NetworkStream NetStream, byte[] data)
+        public void On420(NetworkStream NetStream, List<string> data)
         {
-
+            Send(OutgoingMessage.Type.Four20, null);
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomStart)]
-        public void OnRoomStart(NetworkStream NetStream, byte[] data)
+        public void OnRoomStart(NetworkStream NetStream, List<string> data)
         {
 
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomNoWin)]
-        public void OnRoomNoWin(NetworkStream NetStream, byte[] data)
+        public void OnRoomNoWin(NetworkStream NetStream, List<string> data)
         {
-
+            Console.WriteLine("Can't win yet");
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomGotCheese)]
-        public void OnRoomGotCheese(NetworkStream NetStream, byte[] data)
+        public void OnRoomGotCheese(NetworkStream NetStream, List<string> data)
         {
-
+            int id = Int32.Parse(data[0]);
+            if (id == UserId)
+            {
+                Console.WriteLine("GOT DA CHEEZ!");
+                Send(OutgoingMessage.Type.GotCheese, "0".ToByteArray());
+            }
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomJoin)]
-        public void OnRoomJoin(NetworkStream NetStream, byte[] data)
+        public void OnRoomJoin(NetworkStream NetStream, List<string> data)
         {
 
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomPlayers)]
-        public void OnRoomPlayers(NetworkStream NetStream, byte[] data)
+        public void OnRoomPlayers(NetworkStream NetStream, List<string> data)
         {
-
+            Console.WriteLine("players: " + Username + ", " + String.Join(", ", data.ToArray()));
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomTransform)]
-        public void OnRoomTransform(NetworkStream NetStream, byte[] data)
+        public void OnRoomTransform(NetworkStream NetStream, List<string> data)
         {
 
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomSync)]
-        public void OnRoomSync(NetworkStream NetStream, byte[] data)
+        public void OnRoomSync(NetworkStream NetStream, List<string> data)
         {
 
         }
 
         [BotMessageHandler(BotMessage.Type.OnUserLogin)]
-        public void OnUserLogin(NetworkStream NetStream, byte[] data)
+        public void OnUserLogin(NetworkStream NetStream, List<string> data)
         {
-
+            UserId = Int32.Parse(data[1]);
         }
 
         [BotMessageHandler(BotMessage.Type.OnPing)]
-        public void OnPing(NetworkStream NetStream, byte[] data)
+        public void OnPing(NetworkStream NetStream, List<string> data)
         {
 
         }
 
         [BotMessageHandler(BotMessage.Type.OnVersion)]
-        public void OnVersion(NetworkStream NetStream, byte[] data)
+        public void OnVersion(NetworkStream NetStream, List<string> data)
+        {
+            Console.WriteLine(Username + ": " + data[0] + " players");
+            SendLogin(DefaultRoom);
+        }
+
+        [BotMessageHandler(BotMessage.Type.Default)]
+        public void Default(NetworkStream NetStream, List<string> data)
         {
 
         }
 
-        [BotMessageHandler(BotMessage.Type.Default)]
-        public void Default(NetworkStream NetStream, byte[] data)
+        public void SendVersion()
         {
+            Send(Bot.Version.ToByteArray());
+        }
 
+        public bool SendLogin()
+        {
+            return SendLogin(DefaultRoom);
+        }
+
+        public bool SendLogin(string room)
+        {
+            List<byte> packet = new List<byte>();
+
+            packet.AddRange(Username.ToByteArray());
+
+            if (!String.IsNullOrEmpty(Password))
+                packet.AddRange(Crypto.SHA256String(Password).ToByteArray());
+            else packet.Add(0); // todo: verify this is necessary
+
+            packet.AddRange(room.ToByteArray());
+
+            Send(OutgoingMessage.Type.Login, packet.ToArray());
+
+            return true;
+        }
+
+        public void Tick()
+        {
         }
     }
 }

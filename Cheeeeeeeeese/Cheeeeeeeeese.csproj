@@ -80,6 +80,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Util\Crypto.cs" />
     <Compile Include="Util\Extensions.cs" />
     <Compile Include="Util\Retry.cs" />
     <Compile Include="Util\Win32.cs" />

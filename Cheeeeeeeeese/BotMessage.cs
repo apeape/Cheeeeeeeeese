@@ -25,6 +25,16 @@ namespace Cheeeeeeeeese
         }
     }
 
+    public static class OutgoingMessage
+    {
+        public enum Type : short
+        {
+            Login = 26|4<<8,
+            Four20 = 4|20<<8,
+            GotCheese = 5|18<<8,
+        }
+    }
+
     public class BotMessageHandlerAttribute : Attribute
     {
         public BotMessage.Type Type { get; set; }
