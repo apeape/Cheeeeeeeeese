@@ -8,6 +8,8 @@ namespace Cheeeeeeeeese
 {
     public static class BotMessage
     {
+        public const byte Delimiter = 1;
+        public const byte End = 0;
         public enum Type : short
         {
             On420 = 4|20<<8,

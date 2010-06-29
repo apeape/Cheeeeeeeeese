@@ -10,6 +10,21 @@ namespace Cheeeeeeeeese.Util
 {
     public static class Extensions
     {
+        public static List<string> SplitStrings(this IEnumerable<byte> bytes, byte delimiter, int len)
+        {
+            return SplitStrings(bytes.ToArray(), delimiter, len);
+        }
+
+        public static List<string> SplitStrings(this byte[] bytes, byte delimiter, int len)
+        {
+            List<string> strings = new List<string>();
+            var chunks = SplitBytes(bytes, delimiter, len);
+
+            chunks.ForEach(chunk => strings.Add(chunk.ToUTF8()));
+
+            return strings;
+        }
+
         public static List<byte[]> SplitBytes(this IEnumerable<byte> bytes, byte delimiter, int len)
         {
             return SplitBytes(bytes.ToArray(), delimiter, len);
@@ -24,7 +39,7 @@ namespace Cheeeeeeeeese.Util
                 var chunk = new List<Byte>();
                 byte b;
 
-                while (reader.BaseStream.Position < reader.BaseStream.Length)
+                while (reader.BaseStream.Position < len)
                 {
                     // add non-delimiter bytes to chunk
                     if ((b = reader.ReadByte()) != delimiter)
@@ -34,6 +49,10 @@ namespace Cheeeeeeeeese.Util
                         chunks.Add(chunk.ToArray());
                         chunk = new List<Byte>();
                     }
+                    if (reader.BaseStream.Position == len && chunk.Count > 0)
+                    {
+                        chunks.Add(chunk.ToArray()); // hit the end without finding the delimiter, add last chunk
+                    }
                 }
             }
             return chunks;
@@ -41,8 +60,9 @@ namespace Cheeeeeeeeese.Util
 
         public static byte[] ToByteArray(this string str)
         {
-            System.Text.ASCIIEncoding encoding = new System.Text.ASCIIEncoding();
-            return encoding.GetBytes(str);
+            var res = Encoding.UTF8.GetBytes(str).ToList();
+            //res.Add(0);
+            return res.ToArray();
         }
 
         public static string ToHexString(this byte[] bytes)

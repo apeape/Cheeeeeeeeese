@@ -109,22 +109,20 @@ namespace Cheeeeeeeeese
                 var packets = recvBuf.SplitBytes(0, bytesRead);
                 foreach (byte[] packet in packets)
                 {
-                    // read packet type
+                    // read packet
                     short type = BitConverter.ToInt16(packet, 0);
+                    var splitPacket = recvBuf.Skip(3).SplitStrings(BotMessage.Delimiter, bytesRead - 3);
 
                     // find the message handler method for this message type
-                    var handler = MessageHandlers[(BotMessage.Type)type];
-
-                    // this is retarded, redo it later
-                    var splitPacket = recvBuf.Skip(3).ToUTF8().Split(new string[] {"\x01"}, StringSplitOptions.RemoveEmptyEntries).ToList();
-
-                    if (handler != null)
+                    if (MessageHandlers.ContainsKey((BotMessage.Type)type))
                     {
                         // found a handler, invoke it
+                        var handler = MessageHandlers[(BotMessage.Type)type];
+                        
                         Console.WriteLine(Username + ": received " + Enum.GetName(typeof(BotMessage.Type), type));
                         handler.Invoke(this, new object[] { splitPacket });
                     }
-                    else
+                    else // no handler
                     {
                         Console.WriteLine(Username + ": received unknown packet type " + type.ToString("{0:x2}"));
                         // invoke default handler
@@ -145,22 +143,56 @@ namespace Cheeeeeeeeese
             }
         }
 
-        public void Send(OutgoingMessage.Type type, byte[] data)
+        public void Send(OutgoingMessage.Type type)
         {
-            Console.WriteLine(Username + ": Sending " + Enum.GetName(typeof(OutgoingMessage.Type), type));
-            var buffer = BitConverter.GetBytes((short)type).Concat(data);
-            Send(buffer.ToArray());
+            Send(BitConverter.GetBytes((short)type));
         }
 
-        public void Send(byte[] data)
+        public void Send(OutgoingMessage.Type type, params object[] args)
         {
-            NetStream.Write(data, 0, data.Length);
+            Console.WriteLine(Username + ": Sending " + Enum.GetName(typeof(OutgoingMessage.Type), type));
+
+            // this code is baby shit
+            List<byte[]> args2 = new List<byte[]>();
+            args2.Add(BitConverter.GetBytes((short)type));
+            foreach (byte[] arg in args)
+                args2.Add(arg);
+
+            Send(args2.ToArray());
+        }
+
+        public void Send(params object[] args)
+        {
+            List<byte> data = new List<byte>();
+
+            if (args.Count() == 1)
+                data.AddRange((byte[])args[0]); // don't add delimiter
+            else
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    data.AddRange((byte[])args[i]);
+                    if (i < args.Length - 1)
+                        data.Add(BotMessage.Delimiter);
+                }
+                /*
+                foreach (byte[] chunk in args)
+                {
+                    //data.Concat(chunk);
+                    data.AddRange(chunk);
+                    data.Add(BotMessage.Delimiter);
+                }
+                 */
+            }
+            data.Add(BotMessage.End);
+
+            NetStream.Write(data.ToArray(), 0, data.Count());
         }
 
         [BotMessageHandler(BotMessage.Type.On420)]
         public void On420(List<string> data)
         {
-            Send(OutgoingMessage.Type.Four20, null);
+            Send(OutgoingMessage.Type.Four20);
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomStart)]
@@ -230,7 +262,7 @@ namespace Cheeeeeeeeese
         public void OnVersion(List<string> data)
         {
             Console.WriteLine(Username + ": " + data[0] + " players currently online");
-            SendLogin(DefaultRoom);
+            SendLogin();
         }
 
         [BotMessageHandler(BotMessage.Type.Default)]
@@ -252,9 +284,11 @@ namespace Cheeeeeeeeese
 
         public bool SendLogin(string room)
         {
+            /*
             List<byte> packet = new List<byte>();
 
             packet.AddRange(Username.ToByteArray());
+
 
             if (!String.IsNullOrEmpty(Password))
                 packet.AddRange(Crypto.SHA256String(Password).ToByteArray());
@@ -263,6 +297,11 @@ namespace Cheeeeeeeeese
             packet.AddRange(room.ToByteArray());
 
             Send(OutgoingMessage.Type.Login, packet.ToArray());
+            */
+
+            byte[] pass =
+                (Password != null) ? new byte[] { } : Crypto.SHA256String(Password).ToByteArray();
+            Send(OutgoingMessage.Type.Login, Username.ToByteArray(), pass, room.ToByteArray());
 
             return true;
         }

@@ -27,7 +27,7 @@ namespace Cheeeeeeeeese
             Console.CursorVisible = false;
 
             IPEndPoint en2 = new IPEndPoint(IPAddress.Parse(Bot.ServerEn2), Bot.ServerPort);
-            bot.AddPlayer("testzord123", "", en2);
+            bot.AddPlayer("testzord", "", en2);
 
             bot.StartAll();
         }
