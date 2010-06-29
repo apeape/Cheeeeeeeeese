@@ -26,8 +26,8 @@ namespace Cheeeeeeeeese
             Console.WindowHeight = 25;
             Console.CursorVisible = false;
 
-            bot = new Bot(new IPEndPoint(IPAddress.Parse(Bot.ServerEn2), Bot.ServerPort));
-            bot.AddPlayer("user", "pass");
+            IPEndPoint en2 = new IPEndPoint(IPAddress.Parse(Bot.ServerEn2), Bot.ServerPort);
+            bot.AddPlayer("user", "pass", en2);
 
             bot.StartAll();
         }

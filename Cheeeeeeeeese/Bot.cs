@@ -18,12 +18,7 @@ namespace Cheeeeeeeeese
         public List<Player> Players { get; set; }
         public bool Connected { get; set; }
 
-        public Bot(IPEndPoint server)
-        {
-            Server = server;
-        }
-
-        public void AddPlayer(string username, string password)
+        public void AddPlayer(string username, string password, IPEndPoint server)
         {
             Players.Add(new Player(username, password, Server));
         }

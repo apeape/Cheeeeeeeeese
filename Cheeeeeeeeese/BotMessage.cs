@@ -25,10 +25,6 @@ namespace Cheeeeeeeeese
         }
     }
 
-    public static class BotMessageHandlers
-    {
-    }
-
     public class BotMessageHandlerAttribute : Attribute
     {
         public BotMessage.Type Type { get; set; }
