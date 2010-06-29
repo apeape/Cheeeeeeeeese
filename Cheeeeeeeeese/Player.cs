@@ -13,14 +13,14 @@ namespace Cheeeeeeeeese
 {
     public class Player
     {
-        public SortedList<BotMessage.Type, MethodInfo> MessageHandlers;
+        public SortedList<IncomingMessage.Type, MethodInfo> MessageHandlers;
 
         public const int DefaultDelay = 500;
 
         public const int Timeout = 25000;
         public const int bufferSize = 65536;
 
-        public const string DefaultRoom = "flowerbed";
+        public const string DefaultRoom = "7";
 
         private TcpClient TcpClient;
         private NetworkStream NetStream;
@@ -34,6 +34,9 @@ namespace Cheeeeeeeeese
         public int UserLevel { get; set; }
         public string CurrentRoom { get; set; }
 
+        public DateTime SendPing { get; set; }
+        public DateTime SendWin { get; set; }
+
         public Player(string username, string password, IPEndPoint server)
         {
             this.Username = username;
@@ -45,7 +48,7 @@ namespace Cheeeeeeeeese
 
         public void SetupMessageHandlers()
         {
-            MessageHandlers = new SortedList<BotMessage.Type, MethodInfo>();
+            MessageHandlers = new SortedList<IncomingMessage.Type, MethodInfo>();
 
             // find all methods tagged MessageHandler
             var methods = typeof(Player).GetMethods()
@@ -111,22 +114,28 @@ namespace Cheeeeeeeeese
                 {
                     // read packet
                     short type = BitConverter.ToInt16(packet, 0);
-                    var splitPacket = recvBuf.Skip(3).SplitStrings(BotMessage.Delimiter, bytesRead - 3);
+                    var splitPacket = recvBuf.Skip(3).SplitStrings(Message.Delimiter, bytesRead - 3);
 
                     // find the message handler method for this message type
-                    if (MessageHandlers.ContainsKey((BotMessage.Type)type))
+                    if (MessageHandlers.ContainsKey((IncomingMessage.Type)type))
                     {
                         // found a handler, invoke it
-                        var handler = MessageHandlers[(BotMessage.Type)type];
+                        var handler = MessageHandlers[(IncomingMessage.Type)type];
                         
-                        Console.WriteLine(Username + ": received " + Enum.GetName(typeof(BotMessage.Type), type));
+                        Console.WriteLine(Username + ": received " + Enum.GetName(typeof(IncomingMessage.Type), type));
                         handler.Invoke(this, new object[] { splitPacket });
+                    }
+                    // ignored message type
+                    else if (IgnoredMessage.Type.IsDefined(typeof(IgnoredMessage.Type), type))
+                    {
+                        // do nothing for now
+                        //Console.WriteLine(Username + ": received ignored packet type " + type.ToString("{0:x2}"));
                     }
                     else // no handler
                     {
                         Console.WriteLine(Username + ": received unknown packet type " + type.ToString("{0:x2}"));
                         // invoke default handler
-                        MessageHandlers[BotMessage.Type.Default].Invoke(this, new object[] { splitPacket });
+                        MessageHandlers[IncomingMessage.Type.Default].Invoke(this, new object[] { splitPacket });
                     }
                 }
             }
@@ -173,41 +182,45 @@ namespace Cheeeeeeeeese
                 {
                     data.AddRange((byte[])args[i]);
                     if (i < args.Length - 1)
-                        data.Add(BotMessage.Delimiter);
+                        data.Add(Message.Delimiter);
                 }
-                /*
-                foreach (byte[] chunk in args)
-                {
-                    //data.Concat(chunk);
-                    data.AddRange(chunk);
-                    data.Add(BotMessage.Delimiter);
-                }
-                 */
             }
-            data.Add(BotMessage.End);
+            data.Add(Message.End);
 
             NetStream.Write(data.ToArray(), 0, data.Count());
         }
 
-        [BotMessageHandler(BotMessage.Type.On420)]
+        public List<string> CleanNames(List<string> names)
+        {
+            for (int i = 0; i < names.Count; i++)
+            {
+                if (names[i].Contains("#"))
+                    names[i] = names[i].Substring(0, names[i].IndexOf("#"));
+            }
+
+            return names;
+        }
+
+        [BotMessageHandler(IncomingMessage.Type.On420)]
         public void On420(List<string> data)
         {
             Send(OutgoingMessage.Type.Four20);
         }
 
-        [BotMessageHandler(BotMessage.Type.OnRoomStart)]
+        [BotMessageHandler(IncomingMessage.Type.OnRoomStart)]
         public void OnRoomStart(List<string> data)
         {
+            CleanNames(data);
             Console.WriteLine(Username + ": start " + String.Join(", ", data.ToArray()));
         }
 
-        [BotMessageHandler(BotMessage.Type.OnRoomNoWin)]
+        [BotMessageHandler(IncomingMessage.Type.OnRoomNoWin)]
         public void OnRoomNoWin(List<string> data)
         {
             Console.WriteLine(Username + ": Can't win yet");
         }
 
-        [BotMessageHandler(BotMessage.Type.OnRoomGotCheese)]
+        [BotMessageHandler(IncomingMessage.Type.OnRoomGotCheese)]
         public void OnRoomGotCheese(List<string> data)
         {
             int id = Int32.Parse(data[0]);
@@ -218,32 +231,33 @@ namespace Cheeeeeeeeese
             }
         }
 
-        [BotMessageHandler(BotMessage.Type.OnRoomJoin)]
+        [BotMessageHandler(IncomingMessage.Type.OnRoomJoin)]
         public void OnRoomJoin(List<string> data)
         {
             CurrentRoom = data[0];
             Console.WriteLine(Username + ": joined " + CurrentRoom);
         }
 
-        [BotMessageHandler(BotMessage.Type.OnRoomPlayers)]
+        [BotMessageHandler(IncomingMessage.Type.OnRoomPlayers)]
         public void OnRoomPlayers(List<string> data)
         {
+            CleanNames(data);
             Console.WriteLine("players: " + Username + ", " + String.Join(", ", data.ToArray()));
         }
 
-        [BotMessageHandler(BotMessage.Type.OnRoomTransform)]
+        [BotMessageHandler(IncomingMessage.Type.OnRoomTransform)]
         public void OnRoomTransform(List<string> data)
         {
 
         }
 
-        [BotMessageHandler(BotMessage.Type.OnRoomSync)]
+        [BotMessageHandler(IncomingMessage.Type.OnRoomSync)]
         public void OnRoomSync(List<string> data)
         {
 
         }
 
-        [BotMessageHandler(BotMessage.Type.OnUserLogin)]
+        [BotMessageHandler(IncomingMessage.Type.OnUserLogin)]
         public void OnUserLogin(List<string> data)
         {
             UserId = Int32.Parse(data[1]);
@@ -252,20 +266,20 @@ namespace Cheeeeeeeeese
             Connected = true;
         }
 
-        [BotMessageHandler(BotMessage.Type.OnPing)]
+        [BotMessageHandler(IncomingMessage.Type.OnPing)]
         public void OnPing(List<string> data)
         {
 
         }
 
-        [BotMessageHandler(BotMessage.Type.OnVersion)]
+        [BotMessageHandler(IncomingMessage.Type.OnVersion)]
         public void OnVersion(List<string> data)
         {
             Console.WriteLine(Username + ": " + data[0] + " players currently online");
             SendLogin();
         }
 
-        [BotMessageHandler(BotMessage.Type.Default)]
+        [BotMessageHandler(IncomingMessage.Type.Default)]
         public void Default(List<string> data)
         {
 
@@ -284,21 +298,6 @@ namespace Cheeeeeeeeese
 
         public bool SendLogin(string room)
         {
-            /*
-            List<byte> packet = new List<byte>();
-
-            packet.AddRange(Username.ToByteArray());
-
-
-            if (!String.IsNullOrEmpty(Password))
-                packet.AddRange(Crypto.SHA256String(Password).ToByteArray());
-            else packet.Add(0); // todo: verify this is necessary
-
-            packet.AddRange(room.ToByteArray());
-
-            Send(OutgoingMessage.Type.Login, packet.ToArray());
-            */
-
             byte[] pass =
                 (Password != null) ? new byte[] { } : Crypto.SHA256String(Password).ToByteArray();
             Send(OutgoingMessage.Type.Login, Username.ToByteArray(), pass, room.ToByteArray());
@@ -310,6 +309,14 @@ namespace Cheeeeeeeeese
         {
             // this is going to be a pain in the ass to write
             Console.WriteLine(Username + ": tick");
+
+            // !!! todo: only do these when necessary
+
+            // send ping
+            Send(OutgoingMessage.Type.Ping);
+
+            // send win
+            Send(OutgoingMessage.Type.Win, new byte[] { 0 });
         }
     }
 }
