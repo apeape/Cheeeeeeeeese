@@ -13,19 +13,19 @@ namespace Cheeeeeeeeese
 {
     public class Player
     {
-        public SortedList<IncomingMessage.Type, MethodInfo> MessageHandlers;
+        #region Constants/Variables
 
         public const int DefaultDelay = 500;
-
         public const int Timeout = 25000;
         public const int bufferSize = 65536;
+        public const string DefaultRoom = "3";
 
-        public const string DefaultRoom = "7";
-
+        public SortedList<IncomingMessage.Type, MethodInfo> MessageHandlers;
         private TcpClient TcpClient;
         private NetworkStream NetStream;
-        byte[] recvBuf = new byte[bufferSize];
+        private byte[] recvBuf = new byte[bufferSize];
 
+        public bool Started { get; set; }
         public bool Connected { get; set; }
         public IPEndPoint Server { get; set; }
         public string Username { get; set; }
@@ -36,32 +36,21 @@ namespace Cheeeeeeeeese
 
         public DateTime SendPing { get; set; }
         public DateTime SendWin { get; set; }
+        public DateTime LastPing { get; set; }
+        #endregion
 
-        public Player(string username, string password, IPEndPoint server)
+        public Player(string username, string password, string room, IPEndPoint server)
         {
+            Started = false;
+            Connected = false;
             this.Username = username;
             this.Password = password;
+            this.CurrentRoom = room;
             this.Server = server;
 
             if (MessageHandlers == null) SetupMessageHandlers();
-        }
 
-        public void SetupMessageHandlers()
-        {
-            MessageHandlers = new SortedList<IncomingMessage.Type, MethodInfo>();
-
-            // find all methods tagged MessageHandler
-            var methods = typeof(Player).GetMethods()
-                .Where(q => q.IsDefined(typeof(BotMessageHandlerAttribute), false));
-
-            // store in a lookup based on operation
-            foreach (var m in methods)
-            {
-                var type = ((BotMessageHandlerAttribute)Attribute
-                    .GetCustomAttribute(m, typeof(BotMessageHandlerAttribute))).Type;
-                MessageHandlers.Add(type, m);
-            }
-            Console.WriteLine(Username + ": " + MessageHandlers.Count + " message handlers loaded");
+            Thread.CurrentThread.IsBackground = true;
         }
 
         public void Run()
@@ -83,24 +72,59 @@ namespace Cheeeeeeeeese
             }
 
             Console.WriteLine(Username + ": connected to " + Server.Address + ":" + Server.Port);
-            //Connected = true;
 
             NetStream = TcpClient.GetStream();
             NetStream.ReadTimeout = Timeout;
             NetStream.WriteTimeout = Timeout;
 
             SendVersion();
+            SendPing = DateTime.MinValue;
+            LastPing = DateTime.MinValue;
+            SendWin = DateTime.MinValue;
 
             NetStream.BeginRead(recvBuf, 0, recvBuf.Length, new AsyncCallback(Receive), this);
 
-            while (!Connected) Thread.Sleep(Delay);
-
-            while (Connected)
+            while (Bot.Running)
             {
-                Tick();
-                Thread.Sleep(Delay);
+                if (!Connected) Thread.Sleep(Delay);
+
+                else
+                {
+                    Tick();
+                    Thread.Sleep(Delay);
+                }
+            }
+
+            Console.WriteLine(Username + ": Got exit signal");
+            Connected = false;
+        }
+
+        public void Tick()
+        {
+            var now = DateTime.Now;
+            if (LastPing == DateTime.MinValue) LastPing = now;
+
+            var elapsed = (now - LastPing).TotalSeconds;
+            if (elapsed >= 10)
+            {
+                Send(OutgoingMessage.Type.PingTime, (elapsed * 1000).ToString().ToByteArray());
+                LastPing = now;
+            }
+
+            if (SendPing != DateTime.MinValue && (now - SendPing).TotalSeconds >= 10)
+            {
+                Send(OutgoingMessage.Type.Ping);
+                SendPing = DateTime.MinValue;
+            }
+
+            if (SendWin != DateTime.MinValue && (now - SendWin).TotalSeconds >= 1)
+            {
+                SendWin = DateTime.MinValue;
+                Send(OutgoingMessage.Type.Win, new byte[] { 0 });
             }
         }
+
+        #region Send/Receive
 
         public void Receive(IAsyncResult ar)
         {
@@ -122,7 +146,7 @@ namespace Cheeeeeeeeese
                         // found a handler, invoke it
                         var handler = MessageHandlers[(IncomingMessage.Type)type];
                         
-                        Console.WriteLine(Username + ": received " + Enum.GetName(typeof(IncomingMessage.Type), type));
+                        //Console.WriteLine(Username + ": received " + Enum.GetName(typeof(IncomingMessage.Type), type));
                         handler.Invoke(this, new object[] { splitPacket });
                     }
                     // ignored message type
@@ -133,7 +157,7 @@ namespace Cheeeeeeeeese
                     }
                     else // no handler
                     {
-                        Console.WriteLine(Username + ": received unknown packet type " + type.ToString("{0:x2}"));
+                        Console.WriteLine(Username + ": received unknown packet type " + recvBuf[0] + ", " + recvBuf[1]);
                         // invoke default handler
                         MessageHandlers[IncomingMessage.Type.Default].Invoke(this, new object[] { splitPacket });
                     }
@@ -189,18 +213,9 @@ namespace Cheeeeeeeeese
 
             NetStream.Write(data.ToArray(), 0, data.Count());
         }
+        #endregion
 
-        public List<string> CleanNames(List<string> names)
-        {
-            for (int i = 0; i < names.Count; i++)
-            {
-                if (names[i].Contains("#"))
-                    names[i] = names[i].Substring(0, names[i].IndexOf("#"));
-            }
-
-            return names;
-        }
-
+        #region Message Handlers
         [BotMessageHandler(IncomingMessage.Type.On420)]
         public void On420(List<string> data)
         {
@@ -212,12 +227,14 @@ namespace Cheeeeeeeeese
         {
             CleanNames(data);
             Console.WriteLine(Username + ": start " + String.Join(", ", data.ToArray()));
+            Send(OutgoingMessage.Type.RoomStart);
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnRoomNoWin)]
         public void OnRoomNoWin(List<string> data)
         {
             Console.WriteLine(Username + ": Can't win yet");
+            SendWin = DateTime.Now;
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnRoomGotCheese)]
@@ -226,7 +243,7 @@ namespace Cheeeeeeeeese
             int id = Int32.Parse(data[0]);
             if (id == UserId)
             {
-                Console.WriteLine(Username + ": GOT DA CHEEZ!");
+                Console.WriteLine(Username + ": I GOT DA CHEEZ!");
                 Send(OutgoingMessage.Type.GotCheese, "0".ToByteArray());
             }
         }
@@ -235,14 +252,14 @@ namespace Cheeeeeeeeese
         public void OnRoomJoin(List<string> data)
         {
             CurrentRoom = data[0];
-            Console.WriteLine(Username + ": joined " + CurrentRoom);
+            Console.WriteLine(Username + ": joined room " + CurrentRoom);
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnRoomPlayers)]
         public void OnRoomPlayers(List<string> data)
         {
-            CleanNames(data);
-            Console.WriteLine("players: " + Username + ", " + String.Join(", ", data.ToArray()));
+            //CleanNames(data);
+            //Console.WriteLine("players: " + String.Join(", ", data.ToArray()));
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnRoomTransform)]
@@ -269,7 +286,7 @@ namespace Cheeeeeeeeese
         [BotMessageHandler(IncomingMessage.Type.OnPing)]
         public void OnPing(List<string> data)
         {
-
+            SendPing = DateTime.Now;
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnVersion)]
@@ -284,6 +301,7 @@ namespace Cheeeeeeeeese
         {
 
         }
+        #endregion
 
         public void SendVersion()
         {
@@ -293,7 +311,7 @@ namespace Cheeeeeeeeese
 
         public bool SendLogin()
         {
-            return SendLogin(DefaultRoom);
+            return SendLogin(CurrentRoom);
         }
 
         public bool SendLogin(string room)
@@ -305,18 +323,33 @@ namespace Cheeeeeeeeese
             return true;
         }
 
-        public void Tick()
+        public List<string> CleanNames(List<string> names)
         {
-            // this is going to be a pain in the ass to write
-            Console.WriteLine(Username + ": tick");
+            for (int i = 0; i < names.Count; i++)
+            {
+                if (names[i].Contains("#"))
+                    names[i] = names[i].Substring(0, names[i].IndexOf("#"));
+            }
 
-            // !!! todo: only do these when necessary
+            return names;
+        }
 
-            // send ping
-            Send(OutgoingMessage.Type.Ping);
+        public void SetupMessageHandlers()
+        {
+            MessageHandlers = new SortedList<IncomingMessage.Type, MethodInfo>();
 
-            // send win
-            Send(OutgoingMessage.Type.Win, new byte[] { 0 });
+            // find all methods tagged MessageHandler
+            var methods = typeof(Player).GetMethods()
+                .Where(q => q.IsDefined(typeof(BotMessageHandlerAttribute), false));
+
+            // store in a lookup based on operation
+            foreach (var m in methods)
+            {
+                var type = ((BotMessageHandlerAttribute)Attribute
+                    .GetCustomAttribute(m, typeof(BotMessageHandlerAttribute))).Type;
+                MessageHandlers.Add(type, m);
+            }
+            Console.WriteLine(Username + ": " + MessageHandlers.Count + " message handlers loaded");
         }
     }
 }

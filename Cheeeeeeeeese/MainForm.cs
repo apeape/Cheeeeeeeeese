@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using System.Net;
 using System.Threading;
 using Cheeeeeeeeese.Util;
+using System.Diagnostics;
 
 namespace Cheeeeeeeeese
 {
@@ -26,10 +27,26 @@ namespace Cheeeeeeeeese
             Console.WindowHeight = 25;
             Console.CursorVisible = false;
 
-            IPEndPoint en2 = new IPEndPoint(IPAddress.Parse(Bot.ServerEn2), Bot.ServerPort);
-            bot.AddPlayer("testzord", "", en2);
+            ServerComboBox.Items.Add(Bot.ServerEn1);
+            ServerComboBox.Items.Add(Bot.ServerEn2);
+            ServerComboBox.SelectedIndex = 1;
+
+            RoomTxt.Text = Player.DefaultRoom;
+        }
+
+        private void LoginButton_Click(object sender, EventArgs e)
+        {
+            if (String.IsNullOrEmpty(UsernameTxt.Text)) return;
+
+            IPEndPoint server = new IPEndPoint(IPAddress.Parse(ServerComboBox.SelectedItem.ToString()), Bot.ServerPort);
+            bot.AddPlayer(UsernameTxt.Text, PasswordTxt.Text, RoomTxt.Text, server);
 
             bot.StartAll();
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Bot.Running = false;
         }
     }
 }

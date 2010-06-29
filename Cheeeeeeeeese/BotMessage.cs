@@ -34,23 +34,26 @@ namespace Cheeeeeeeeese
     {
         public enum Type : short
         {
-            unknown0 = 4 | 3 << 8,
-            unknown1 = 4 | 4 << 8,
-            unknown2 = 4 | 6 << 8,
-            unknown3 = 5 | 7 << 8,
-            unknown4 = 5 | 8 << 8,
-            unknown5 = 5 | 9 << 8,
+            unknown4_3 = 4 | 3 << 8,
+            unknown4_4 = 4 | 4 << 8,
+            unknown4_6 = 4 | 6 << 8,
+            unknown4_8 = 4 | 8 << 8,
+            unknown4_9 = 4 | 9 << 8,
+            unknown5_7 = 5 | 7 << 8,
+            unknown5_8 = 5 | 8 << 8,
+            unknown5_9 = 5 | 9 << 8,
             CreateNail = 5 | 14 << 8, // create nail?
-            unknown6 = 5 | 15 << 8,
-            unknown7 = 5 | 16 << 8,
-            unknown8 = 5 | 17 << 8,
+            unknown5_15 = 5 | 15 << 8,
+            unknown5_16 = 5 | 16 << 8,
+            unknown5_17 = 5 | 17 << 8,
             CreateObject = 5 | 20 << 8, // create object
             Chat = 6 | 6 << 8,  // chat
-            unknown9 = 6 | 17 << 8,
+            unknown6_17 = 6 | 17 << 8,
             RemovePlayer = 8 | 5 << 8,  // remove player
-            unknown10 = 8 | 6 << 8,
-            unknown11 = 8 | 7 << 8,
-            unknown12 = 8 | 14 << 8,
+            unknown8_6 = 8 | 6 << 8,
+            unknown8_7 = 8 | 7 << 8,
+            unknown8_8 = 8 | 8 << 8,
+            unknown8_14 = 8 | 14 << 8,
             TitleList = 8 | 15 << 8, // list of titles
             ShamanResult = 8 | 17 << 8, // "Thanks to <V>%1<BL>, we gathered %2 cheese !"
         }
@@ -63,9 +66,10 @@ namespace Cheeeeeeeeese
             Login = 26|4<<8,
             Four20 = 4|20<<8,
             GotCheese = 5|18<<8,
-            PingTime = 26|10<<8,
+            PingTime = 26|2<<8,
             Ping = 26|26<<8,
             Win = 5|18<<8,
+            RoomStart = 5|19<<8,
         }
     }
 

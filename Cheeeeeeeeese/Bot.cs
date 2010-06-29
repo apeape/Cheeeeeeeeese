@@ -17,20 +17,24 @@ namespace Cheeeeeeeeese
 
         public List<Player> Players { get; set; }
 
+        public static bool Running { get; set; }
+
         public Bot()
         {
             Players = new List<Player>();
         }
 
-        public void AddPlayer(string username, string password, IPEndPoint server)
+        public void AddPlayer(string username, string password, string room, IPEndPoint server)
         {
-            Players.Add(new Player(username, password, server));
+            Players.Add(new Player(username, password, room, server));
         }
 
         public void StartAll()
         {
+            Running = true;
             // start each player in its own thread
-            Players.ForEach(player => new Thread(delegate() { player.Run(); }).Start());
+            List<Player> unstarted = Players.Where(player => !player.Started && !player.Connected).ToList();
+            unstarted.ForEach(player => new Thread(delegate() { player.Run(); }).Start());
         }
     }
 }
