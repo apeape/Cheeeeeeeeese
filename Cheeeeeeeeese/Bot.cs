@@ -14,13 +14,12 @@ namespace Cheeeeeeeeese
         public const string ServerEn2 = "91.121.116.13";
         public const int ServerPort = 44444;
 
-        public IPEndPoint Server { get; set; }
         public List<Player> Players { get; set; }
         public bool Connected { get; set; }
 
         public void AddPlayer(string username, string password, IPEndPoint server)
         {
-            Players.Add(new Player(username, password, Server));
+            Players.Add(new Player(username, password, server));
         }
 
         public void StartAll()
