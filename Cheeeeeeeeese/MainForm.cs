@@ -40,8 +40,7 @@ namespace Cheeeeeeeeese
         {
             if (String.IsNullOrEmpty(UsernameTxt.Text)) return;
 
-            IPEndPoint server = new IPEndPoint(IPAddress.Parse(ServerComboBox.SelectedItem.ToString()), Bot.ServerPort);
-            bot.AddPlayer(UsernameTxt.Text, PasswordTxt.Text, RoomTxt.Text, VersionTxt.Text, server);
+            bot.AddPlayer(UsernameTxt.Text, PasswordTxt.Text, RoomTxt.Text, VersionTxt.Text, (IPEndPoint)ServerComboBox.SelectedItem);
 
             bot.StartAll();
         }

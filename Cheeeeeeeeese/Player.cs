@@ -16,7 +16,7 @@ namespace Cheeeeeeeeese
         #region Constants/Variables
 
         public const int DefaultDelay = 500;
-        public const int Timeout = 25000;
+        public const int Timeout = 10000;
         public const int BufferSize = 65536;
         public const string DefaultRoom = "11";
 
@@ -41,6 +41,8 @@ namespace Cheeeeeeeeese
         public DateTime SendPing { get; set; }
         public DateTime SendWin { get; set; }
         public DateTime LastPing { get; set; }
+
+        private Random rand = new Random();
         #endregion
 
         public Player(string username, string password, string room, string version, IPEndPoint server)
@@ -67,11 +69,21 @@ namespace Cheeeeeeeeese
         {
             Started = true;
 
+            DateTime startTime = DateTime.Now;
+
             Connect();
 
             while (Bot.Running)
             {
-                if (!Connected) Thread.Sleep(Delay);
+                if (!Connected)
+                {
+                    if ((DateTime.Now - startTime).TotalMilliseconds >= Player.Timeout)
+                    {
+                        Console.WriteLine(Username + ": Timed out while trying to connect");
+                        break;
+                    }
+                    Thread.Sleep(Delay);
+                }
 
                 else
                 {
@@ -88,12 +100,14 @@ namespace Cheeeeeeeeese
         {
             try
             {
-                TcpClient = new TcpClient(Server.Address.ToString(), Server.Port);
+                TcpClient = Retry.RetryAction<TcpClient>(() =>
+                {
+                    return new TcpClient(Server.Address.ToString(), Server.Port);
+                }, 10, 1000);
             }
             catch (Exception e)
             {
-                Console.WriteLine(Username + ": failed to connect to " + Server.Address + ":" + Server.Port);
-                Console.WriteLine(e.Message);
+                Console.WriteLine(Username + ": Failed to connect to " + Server.Address + ":" + Server.Port);
                 return false;
             }
 
@@ -239,7 +253,7 @@ namespace Cheeeeeeeeese
             {
                 ulong oldcheese = Cheese;
                 Cheese = ulong.Parse(data[0]);
-                if (Cheese != oldcheese)
+                if (Cheese > oldcheese)
                     Console.WriteLine(Username + ": Current Cheese: " + Cheese);
             }
             catch (Exception)
@@ -257,11 +271,9 @@ namespace Cheeeeeeeeese
         [BotMessageHandler(IncomingMessage.Type.OnRoomStart)]
         public void OnRoomStart(List<string> data)
         {
-            //Console.WriteLine(Username + ": Shamans: " + String.Join(", ", CurrentShamans.ToArray()));
-
-            CleanNames(data);
+            //CleanNames(data);
             //Console.WriteLine(Username + ": start " + String.Join(", ", data.ToArray()));
-            Console.WriteLine(Username + ": round start");
+            Console.WriteLine(Username + ": New round starting");
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnRoomNoWin)]
@@ -300,7 +312,7 @@ namespace Cheeeeeeeeese
         [BotMessageHandler(IncomingMessage.Type.OnRoomTransform)]
         public void OnRoomTransform(List<string> data)
         {
-            // this is totally not working
+            // this is totally not working, wtf
             /*
             Console.WriteLine(Username + ": Transform: " + String.Join(", ", data.ToArray()));
             try
@@ -324,7 +336,13 @@ namespace Cheeeeeeeeese
         [BotMessageHandler(IncomingMessage.Type.OnRoomSync)]
         public void OnRoomSync(List<string> data)
         {
-            Send(OutgoingMessage.Type.GrabCheese);
+            if (CurrentPlayers.Count > 1)
+            {
+                //Thread.Sleep(rand.Next(3000, 7000));
+                Send(OutgoingMessage.Type.GrabCheese);
+            }
+            else
+                Console.WriteLine(Username + ": All alone, can't get any cheese =(");
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnUserLogin)]
@@ -349,6 +367,12 @@ namespace Cheeeeeeeeese
             SendLogin();
         }
 
+        [BotMessageHandler(IncomingMessage.Type.OnChat)]
+        public void OnChat(List<string> data)
+        {
+            Console.WriteLine(Username + ": Incoming Chat Msg: " + data[0]);
+        }
+
         [BotMessageHandler(IncomingMessage.Type.OnLoginError)]
         public void OnLoginError(List<string> data)
         {
@@ -364,6 +388,50 @@ namespace Cheeeeeeeeese
             {
                 Console.WriteLine(Username + " failed to log in: Already logged in " + String.Join(", ", data.ToArray()));
             }
+        }
+
+        [BotMessageHandler(IncomingMessage.Type.OnBanned)]
+        public void OnBanned(List<string> data)
+        {
+            try
+            {
+                var duration = Math.Floor(Decimal.Parse(data[0]) / 3600000);
+                if (duration == 0)
+                {
+                    Console.WriteLine(Username + ": Banned for the following reason: " + data[1]);
+                }
+                else
+                {
+                    Console.WriteLine(Username + ": Banned for " + duration + " hours for the following reason: " + data[1]);
+                }
+            }
+            catch (Exception)
+            {
+                Console.WriteLine(Username + ": Error parsing ban packet");
+            }
+            //var duration = Math.Floor((Number(_local3[1]) / 3600000));
+        }
+
+        [BotMessageHandler(IncomingMessage.Type.OnPermaBanned)]
+        public void OnPermaBanned(List<string> data)
+        {
+            try
+            {
+                if (data.Count == 0)
+                    Console.WriteLine(Username + ": Perma-banned =(");
+                else if (data.Count == 1)
+                    Console.WriteLine(Username + ": Already banned for " + data[1] + " hours, if you are ever banned for >24 hours total, your account/mouse will be deleted automatically (OH NOES)");
+                else
+                {
+                    var duration = Math.Floor(Decimal.Parse(data[0]) / 3600000);
+                    Console.WriteLine(Username + ": Banned for " + duration + " hours for the following reason: " + data[1]);
+                }
+            }
+            catch (Exception)
+            {
+                Console.WriteLine(Username + ": Error parsing ban packet");
+            }
+            //var duration = Math.Floor((Number(_local3[1]) / 3600000));
         }
 
         [BotMessageHandler(IncomingMessage.Type.Default)]

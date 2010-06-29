@@ -28,6 +28,9 @@ namespace Cheeeeeeeeese
             OnVersion = 26|27<<8,
             OnInventory = 20|20<<8,
             OnLoginError = 26 | 3 << 8,
+            OnChat = 26 | 4 << 8,
+            OnBanned = 26 | 17 << 8,
+            OnPermaBanned = 26 | 18 << 8,
 
             Default = -1,
         }

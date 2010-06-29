@@ -11,9 +11,8 @@ namespace Cheeeeeeeeese
     public class Bot
     {
         public const string Version = "0.30\0";
-        public const string ServerEn1 = "91.121.157.83";
-        public const string ServerEn2 = "91.121.116.13";
-        public const int ServerPort = 44444;
+        public static IPEndPoint ServerEn1 = new IPEndPoint(IPAddress.Parse("91.121.157.83"), 443);
+        public static IPEndPoint ServerEn2 = new IPEndPoint(IPAddress.Parse("91.121.116.13"), 44444);
 
         public List<Player> Players { get; set; }
 
