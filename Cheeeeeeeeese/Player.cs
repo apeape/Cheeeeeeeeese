@@ -8,6 +8,7 @@ using Cheeeeeeeeese.Util;
 using System.IO;
 using System.Reflection;
 using System.Threading;
+using Starksoft.Net.Proxy;
 
 namespace Cheeeeeeeeese
 {
@@ -15,10 +16,11 @@ namespace Cheeeeeeeeese
     {
         #region Constants/Variables
 
-        public const int DefaultDelay = 500;
-        public const int Timeout = 10000;
+        public const int DefaultDelay = 1500;
+        public const int ReconnectDelay = 10000;
+        public const int Timeout = 15000;
         public const int BufferSize = 65536;
-        public const string DefaultRoom = "flowerbed";
+        public const string DefaultRoom = "fromageville";
 
         public SortedList<IncomingMessage.Type, MethodInfo> MessageHandlers;
         private TcpClient TcpClient;
@@ -27,17 +29,23 @@ namespace Cheeeeeeeeese
 
         public bool Started { get; set; }
         public bool Connected { get; set; }
+        private Object ConnectLock = new Object();
         public IPEndPoint Server { get; set; }
+        public IPEndPoint Proxy { get; set; }
+        public ProxyType ProxyType { get; set; }
+        public bool UseProxy { get; set; }
         public string Version { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
         public int UserId { get; set; }
         public int UserLevel { get; set; }
+        public string IntendedRoom { get; set; }
         public string CurrentRoom { get; set; }
         public List<string> CurrentPlayers { get; set; }
         public List<string> CurrentShamans { get; set; }
         public ulong Cheese { get; set; }
 
+        public DateTime StartTime { get; set; }
         public DateTime SendPing { get; set; }
         public DateTime SendWin { get; set; }
         public DateTime LastPing { get; set; }
@@ -45,12 +53,20 @@ namespace Cheeeeeeeeese
         private Random rand = new Random();
         #endregion
 
+        public Player(string username, string password, string room, string version, IPEndPoint server, IPEndPoint proxy, ProxyType proxyType) : this(username, password, room, version, server)
+        {
+            this.Proxy = proxy;
+            this.ProxyType = proxyType;
+            UseProxy = true;
+        }
+
         public Player(string username, string password, string room, string version, IPEndPoint server)
         {
             Started = false;
             Connected = false;
             this.Username = username;
             this.Password = password;
+            this.IntendedRoom = room;
             this.CurrentRoom = room;
             this.Server = server;
             this.Version = version;
@@ -59,6 +75,7 @@ namespace Cheeeeeeeeese
 
             Thread.CurrentThread.IsBackground = true;
         }
+
 
         public void Run()
         {
@@ -69,7 +86,7 @@ namespace Cheeeeeeeeese
         {
             Started = true;
 
-            DateTime startTime = DateTime.Now;
+            StartTime = DateTime.Now;
 
             Connect();
 
@@ -77,7 +94,7 @@ namespace Cheeeeeeeeese
             {
                 if (!Connected)
                 {
-                    if ((DateTime.Now - startTime).TotalMilliseconds >= Player.Timeout)
+                    if ((DateTime.Now - StartTime).TotalMilliseconds >= Player.Timeout)
                     {
                         Console.WriteLine(Username + ": Timed out while trying to connect");
                         break;
@@ -96,35 +113,70 @@ namespace Cheeeeeeeeese
             Connected = false;
         }
 
+        public void Reconnect()
+        {
+            if (Connected)
+            {
+                NetStream.Close();
+                Connected = false;
+                Thread.Sleep(ReconnectDelay);
+                Connect();
+            }
+        }
+
         public bool Connect()
         {
-            try
+            if (Connected) return false;
+
+            lock (ConnectLock)
             {
-                TcpClient = Retry.RetryAction<TcpClient>(() =>
+                StartTime = DateTime.Now;
+                Console.WriteLine(Username + ": Connecting...");
+
+                try
                 {
-                    return new TcpClient(Server.Address.ToString(), Server.Port);
-                }, 10, 1000);
+                    TcpClient = Retry.RetryAction<TcpClient>(() =>
+                    {
+                        if (!UseProxy)
+                            return new TcpClient(Server.Address.ToString(), Server.Port);
+                        else // try to connect through a proxy
+                        {
+                            // create an instance of the client proxy factory 
+                            ProxyClientFactory proxyFactory = new ProxyClientFactory();
+
+                            // use the proxy client factory to generically specify the type of proxy to create 
+                            // the proxy factory method CreateProxyClient returns an IProxyClient object 
+                            IProxyClient proxyClient = proxyFactory.CreateProxyClient(ProxyType.Socks5, Proxy.Address.ToString(), Proxy.Port);
+
+                            Console.WriteLine(Username + ": Trying to connect using " + Enum.GetName(typeof(ProxyType), ProxyType) + " proxy " + Proxy.Address.ToString() + ":" + Proxy.Port);
+                            // create a connection through the proxy to www.starksoft.com over port 80 
+                            return proxyClient.CreateConnection(Server.Address.ToString(), Server.Port);
+                        }
+                    }, 10, 1000);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(Username + ": Failed to connect to " + Server.Address + ":" + Server.Port + (UseProxy ? ", likely culprit is a bad proxy server!" : ""));
+                    return false;
+                }
+
+                Console.WriteLine(Username + ": Connected to " + Server.Address + ":" + Server.Port);
+
+                NetStream = TcpClient.GetStream();
+                NetStream.ReadTimeout = Timeout;
+                NetStream.WriteTimeout = Timeout;
+
+                Connected = true;
+
+                SendVersion();
+                SendPing = DateTime.MinValue;
+                LastPing = DateTime.MinValue;
+                SendWin = DateTime.MinValue;
+
+                NetStream.BeginRead(RecvBuf, 0, RecvBuf.Length, new AsyncCallback(Receive), this);
+
+                return true;
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(Username + ": Failed to connect to " + Server.Address + ":" + Server.Port);
-                return false;
-            }
-
-            Console.WriteLine(Username + ": connected to " + Server.Address + ":" + Server.Port);
-
-            NetStream = TcpClient.GetStream();
-            NetStream.ReadTimeout = Timeout;
-            NetStream.WriteTimeout = Timeout;
-
-            SendVersion();
-            SendPing = DateTime.MinValue;
-            LastPing = DateTime.MinValue;
-            SendWin = DateTime.MinValue;
-
-            NetStream.BeginRead(RecvBuf, 0, RecvBuf.Length, new AsyncCallback(Receive), this);
-
-            return true;
         }
 
         public void Tick()
@@ -138,17 +190,20 @@ namespace Cheeeeeeeeese
                 Send(OutgoingMessage.Type.CheckInventory);
                 Send(OutgoingMessage.Type.PingTime, (elapsed * 1000).ToString().ToByteArray());
                 LastPing = now;
+                Console.WriteLine(Username + ": <-Pong");
             }
 
             if (SendPing != DateTime.MinValue && (now - SendPing).TotalSeconds >= 10)
             {
                 Send(OutgoingMessage.Type.Ping);
                 SendPing = DateTime.MinValue;
+                Console.WriteLine(Username + ": <-Pong2");
             }
 
-            if (SendWin != DateTime.MinValue && (now - SendWin).TotalSeconds >= 1)
+            if (SendWin != DateTime.MinValue && (now - SendWin).TotalSeconds >= 2)
             {
                 SendWin = DateTime.MinValue;
+                Console.WriteLine(Username + ": Sending Win");
                 Send(OutgoingMessage.Type.Win, new byte[] { 0 });
             }
         }
@@ -157,52 +212,55 @@ namespace Cheeeeeeeeese
 
         public void Receive(IAsyncResult ar)
         {
-            // Read data from the remote device.
-            int bytesRead = NetStream.EndRead(ar);
-
-            if (bytesRead > 2)
-            {
-                var packets = RecvBuf.SplitBytes(0, bytesRead);
-                foreach (byte[] packet in packets)
-                {
-                    // read packet
-                    short type = BitConverter.ToInt16(packet, 0);
-                    var splitPacket = RecvBuf.Skip(3).SplitStrings(Message.Delimiter, bytesRead - 3);
-
-                    // find the message handler method for this message type
-                    if (MessageHandlers.ContainsKey((IncomingMessage.Type)type))
-                    {
-                        // found a handler, invoke it
-                        var handler = MessageHandlers[(IncomingMessage.Type)type];
-                        
-                        //Console.WriteLine(Username + ": received " + Enum.GetName(typeof(IncomingMessage.Type), type));
-                        handler.Invoke(this, new object[] { splitPacket });
-                    }
-                    // ignored message type
-                    else if (IgnoredMessage.Type.IsDefined(typeof(IgnoredMessage.Type), type))
-                    {
-                        // do nothing for now
-                        //Console.WriteLine(Username + ": received ignored packet type " + type.ToString("{0:x2}"));
-                    }
-                    else // no handler
-                    {
-                        Console.WriteLine(Username + ": received unknown packet type " + RecvBuf[0] + ", " + RecvBuf[1]);
-                        // invoke default handler
-                        MessageHandlers[IncomingMessage.Type.Default].Invoke(this, new object[] { splitPacket });
-                    }
-                }
-            }
-
+            if (!Connected) return;
             try
             {
+                // Read data from the remote device.
+                int bytesRead = NetStream.EndRead(ar);
+
+                if (bytesRead > 2)
+                {
+                    var packets = RecvBuf.SplitBytes(0, bytesRead);
+                    foreach (byte[] packet in packets)
+                    {
+                        // read packet
+                        short type = BitConverter.ToInt16(packet, 0);
+                        var splitPacket = RecvBuf.Skip(3).SplitStrings(Message.Delimiter, bytesRead - 3);
+
+                        // find the message handler method for this message type
+                        if (MessageHandlers.ContainsKey((IncomingMessage.Type)type))
+                        {
+                            // found a handler, invoke it
+                            var handler = MessageHandlers[(IncomingMessage.Type)type];
+                            
+                            //Console.WriteLine(Username + ": received " + Enum.GetName(typeof(IncomingMessage.Type), type));
+                            handler.Invoke(this, new object[] { splitPacket });
+                        }
+                        // ignored message type
+                        else if (IgnoredMessage.Type.IsDefined(typeof(IgnoredMessage.Type), type))
+                        {
+                            // do nothing for now
+                            //Console.WriteLine(Username + ": received ignored packet type " + type.ToString("{0:x2}"));
+                        }
+                        else // no handler
+                        {
+                            Console.WriteLine(Username + ": received unknown packet type " + RecvBuf[0] + ", " + RecvBuf[1]);
+                            // invoke default handler
+                            MessageHandlers[IncomingMessage.Type.Default].Invoke(this, new object[] { splitPacket });
+                        }
+                    }
+                }
+
                 // continue reading
                 NetStream.BeginRead(RecvBuf, 0, RecvBuf.Length, new AsyncCallback(Receive), ar);
             }
             catch (Exception e)
             {
-                Console.WriteLine(Username + ": Got disconnected");
-                Connected = false;
-                Connect();
+                if (Connected)
+                {
+                    Console.WriteLine(Username + ": Receive Got disconnected");
+                    Reconnect();
+                }
             }
         }
 
@@ -226,6 +284,8 @@ namespace Cheeeeeeeeese
 
         public void Send(params object[] args)
         {
+            if (!Connected) return;
+
             List<byte> data = new List<byte>();
 
             if (args.Count() == 1)
@@ -241,7 +301,18 @@ namespace Cheeeeeeeeese
             }
             data.Add(Message.End);
 
-            NetStream.Write(data.ToArray(), 0, data.Count());
+            try
+            {
+                NetStream.Write(data.ToArray(), 0, data.Count());
+            }
+            catch (Exception e)
+            {
+                if (Connected)
+                {
+                    Console.WriteLine(Username + ": Send() Got disconnected, reconnecting...");
+                    Reconnect();
+                }
+            }
         }
         #endregion
 
@@ -258,7 +329,7 @@ namespace Cheeeeeeeeese
             }
             catch (Exception)
             {
-                Console.WriteLine(Username + ": Error reading cheese value");
+                Console.WriteLine(Username + ": Malformed shop/inventory packet... wtf? - " + String.Join(", ", data.ToArray()));
             }
         }
 
@@ -290,6 +361,7 @@ namespace Cheeeeeeeeese
             if (id == UserId)
             {
                 Console.WriteLine(Username + ": I GOT DA CHEEZ!");
+                //Thread.Sleep(DefaultDelay);
                 Send(OutgoingMessage.Type.EnterHole, "0".ToByteArray());
             }
         }
@@ -299,6 +371,12 @@ namespace Cheeeeeeeeese
         {
             CurrentRoom = data[0];
             Console.WriteLine(Username + ": joined room " + CurrentRoom);
+            if (CurrentRoom != IntendedRoom)
+            {
+                Console.WriteLine(Username + ": Malformed room packet... wtf? - " + String.Join(", ", data.ToArray()));
+                //Console.WriteLine(Username + ": Reconnecting...");
+                //Reconnect();
+            }
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnRoomPlayers)]
@@ -336,8 +414,11 @@ namespace Cheeeeeeeeese
         [BotMessageHandler(IncomingMessage.Type.OnRoomSync)]
         public void OnRoomSync(List<string> data)
         {
-            if (CurrentPlayers.Count > 1)
+            //var cleaned = CleanNames(data.Where(p => p.Contains("#")).ToList());
+            var numPlayers = CurrentPlayers.Distinct().Where(p => p.Contains("#")).Count();
+            if (numPlayers == 0 || numPlayers > 1)
             {
+                Console.WriteLine(Username + ": " + numPlayers + " (?) players present: Grabbing cheese");
                 //Thread.Sleep(rand.Next(3000, 7000));
                 Send(OutgoingMessage.Type.GrabCheese);
             }
@@ -351,12 +432,12 @@ namespace Cheeeeeeeeese
             UserId = Int32.Parse(data[1]);
             UserLevel = Int32.Parse(data[2]);
             Console.WriteLine(data[0] + " logged in, " + UserId + ", " + UserLevel);
-            Connected = true;
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnPing)]
         public void OnPing(List<string> data)
         {
+            Console.WriteLine(Username + ": ->Ping");
             SendPing = DateTime.Now;
         }
 
@@ -386,7 +467,7 @@ namespace Cheeeeeeeeese
             }
             else if (data.Count == 2)
             {
-                Console.WriteLine(Username + " failed to log in: Already logged in " + String.Join(", ", data.ToArray()));
+                Console.WriteLine(Username + " failed to log in: Already logged in");
             }
         }
 
@@ -455,7 +536,7 @@ namespace Cheeeeeeeeese
         public bool SendLogin(string room)
         {
             byte[] pass =
-                (Password == null) ? new byte[] { } : Crypto.SHA256String(Password).ToByteArray();
+                String.IsNullOrEmpty(Password) ? new byte[] { } : Crypto.SHA256String(Password).ToByteArray();
             Send(OutgoingMessage.Type.Login, Username.ToByteArray(), pass, room.ToByteArray());
 
             return true;

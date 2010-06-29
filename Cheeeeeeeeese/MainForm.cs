@@ -10,6 +10,7 @@ using System.Net;
 using System.Threading;
 using Cheeeeeeeeese.Util;
 using System.Diagnostics;
+using Starksoft.Net.Proxy;
 
 namespace Cheeeeeeeeese
 {
@@ -31,6 +32,10 @@ namespace Cheeeeeeeeese
             ServerComboBox.Items.Add(Bot.ServerEn2);
             ServerComboBox.SelectedIndex = 1;
 
+            //filterType.Properties.Items.AddRange(Enum.GetNames(typeof(WarehouseObject.FilterType)));
+            ProxyTypeComboBox.Items.AddRange(Enum.GetNames(typeof(ProxyType)));
+            ProxyTypeComboBox.SelectedIndex = 4;
+
             RoomTxt.Text = Player.DefaultRoom;
 
             VersionTxt.Text = Bot.Version;
@@ -40,7 +45,24 @@ namespace Cheeeeeeeeese
         {
             if (String.IsNullOrEmpty(UsernameTxt.Text)) return;
 
-            bot.AddPlayer(UsernameTxt.Text, PasswordTxt.Text, RoomTxt.Text, VersionTxt.Text, (IPEndPoint)ServerComboBox.SelectedItem);
+            if (ProxyCheckBox.Checked && !String.IsNullOrEmpty(ProxyTxt.Text))
+            {
+                // try to get the proxy ip/port
+                try
+                {
+                    string[] s = ProxyTxt.Text.Split(':');
+                    IPAddress address = Dns.GetHostEntry(s[0]).AddressList[0];
+                    IPEndPoint proxyAddress = new IPEndPoint(address, Int32.Parse(s[1]));
+
+                    bot.Players.Add(new Player(UsernameTxt.Text, PasswordTxt.Text, RoomTxt.Text, VersionTxt.Text, (IPEndPoint)ServerComboBox.SelectedItem, proxyAddress, (ProxyType)ProxyType.Parse(typeof(ProxyType), ProxyTypeComboBox.Text)));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error parsing proxy: " + ex.Message);
+                }
+            }
+            else 
+                bot.Players.Add(new Player(UsernameTxt.Text, PasswordTxt.Text, RoomTxt.Text, VersionTxt.Text, (IPEndPoint)ServerComboBox.SelectedItem));
 
             bot.StartAll();
         }

@@ -39,6 +39,10 @@
             this.RoomTxt = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
+            this.ProxyCheckBox = new System.Windows.Forms.CheckBox();
+            this.ProxyTxt = new System.Windows.Forms.TextBox();
+            this.label6 = new System.Windows.Forms.Label();
+            this.ProxyTypeComboBox = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // UsernameTxt
@@ -140,14 +144,54 @@
             this.label4.TabIndex = 3;
             this.label4.Text = "Room";
             // 
+            // ProxyCheckBox
+            // 
+            this.ProxyCheckBox.AutoSize = true;
+            this.ProxyCheckBox.Location = new System.Drawing.Point(6, 123);
+            this.ProxyCheckBox.Name = "ProxyCheckBox";
+            this.ProxyCheckBox.Size = new System.Drawing.Size(54, 17);
+            this.ProxyCheckBox.TabIndex = 11;
+            this.ProxyCheckBox.Text = "Proxy";
+            this.ProxyCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // ProxyTxt
+            // 
+            this.ProxyTxt.Location = new System.Drawing.Point(60, 121);
+            this.ProxyTxt.Name = "ProxyTxt";
+            this.ProxyTxt.Size = new System.Drawing.Size(114, 21);
+            this.ProxyTxt.TabIndex = 3;
+            this.ProxyTxt.Text = "127.0.0.1:7070";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(3, 148);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(31, 13);
+            this.label6.TabIndex = 12;
+            this.label6.Text = "Type";
+            // 
+            // ProxyTypeComboBox
+            // 
+            this.ProxyTypeComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.ProxyTypeComboBox.FormattingEnabled = true;
+            this.ProxyTypeComboBox.Location = new System.Drawing.Point(60, 145);
+            this.ProxyTypeComboBox.Name = "ProxyTypeComboBox";
+            this.ProxyTypeComboBox.Size = new System.Drawing.Size(114, 21);
+            this.ProxyTypeComboBox.TabIndex = 13;
+            // 
             // MainForm
             // 
             this.AcceptButton = this.LoginButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(178, 123);
+            this.ClientSize = new System.Drawing.Size(178, 172);
+            this.Controls.Add(this.ProxyTypeComboBox);
+            this.Controls.Add(this.label6);
+            this.Controls.Add(this.ProxyCheckBox);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.VersionTxt);
+            this.Controls.Add(this.ProxyTxt);
             this.Controls.Add(this.RoomTxt);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.ServerComboBox);
@@ -181,6 +225,10 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox VersionTxt;
         private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.CheckBox ProxyCheckBox;
+        private System.Windows.Forms.TextBox ProxyTxt;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.ComboBox ProxyTypeComboBox;
     }
 }
 

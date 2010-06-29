@@ -1,0 +1,6 @@
+version 1.0.130.0
+========================================================================================
+
+* updated the factory methods to support a variety of options such the user providing their own TcpClient object
+
+* updated proxy classes to support additional TcpClient object support

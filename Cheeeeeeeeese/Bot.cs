@@ -23,11 +23,6 @@ namespace Cheeeeeeeeese
             Players = new List<Player>();
         }
 
-        public void AddPlayer(string username, string password, string room, string version, IPEndPoint server)
-        {
-            Players.Add(new Player(username, password, room, version, server));
-        }
-
         public void StartAll()
         {
             Running = true;
