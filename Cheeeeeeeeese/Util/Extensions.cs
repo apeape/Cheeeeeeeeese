@@ -10,15 +10,15 @@ namespace Cheeeeeeeeese.Util
 {
     public static class Extensions
     {
-        public static List<byte[]> SplitBytes(this IEnumerable<byte> bytes, byte delimiter)
+        public static List<byte[]> SplitBytes(this IEnumerable<byte> bytes, byte delimiter, int len)
         {
-            return SplitBytes(bytes.ToArray(), delimiter);
+            return SplitBytes(bytes.ToArray(), delimiter, len);
         }
-        public static List<byte[]> SplitBytes(this byte[] bytes, byte delimiter)
+        public static List<byte[]> SplitBytes(this byte[] bytes, byte delimiter, int len)
         {
             var chunks = new List<byte[]>();
 
-            using (MemoryStream stream = new MemoryStream(bytes, 0, bytes.Length))
+            using (MemoryStream stream = new MemoryStream(bytes, 0, len))
             using (BinaryReader reader = new BinaryReader(stream))
             {
                 var chunk = new List<Byte>();
@@ -58,7 +58,8 @@ namespace Cheeeeeeeeese.Util
 
         public static string ToUTF8(this byte[] self)
         {
-            return Encoding.UTF8.GetString(self);
+            // remove extra 0s
+            return Encoding.UTF8.GetString(self.TakeWhile(b => b != 0).ToArray());
         }
 
         public static string ArrayToStringGeneric<T>(this IList<T> array, string delimeter)

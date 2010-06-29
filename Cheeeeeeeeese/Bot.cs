@@ -17,6 +17,11 @@ namespace Cheeeeeeeeese
 
         public List<Player> Players { get; set; }
 
+        public Bot()
+        {
+            Players = new List<Player>();
+        }
+
         public void AddPlayer(string username, string password, IPEndPoint server)
         {
             Players.Add(new Player(username, password, server));

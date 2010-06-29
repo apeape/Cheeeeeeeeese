@@ -14,7 +14,7 @@ namespace Cheeeeeeeeese
 {
     public partial class MainForm : Form
     {
-        Bot bot;
+        Bot bot = new Bot();
 
         public MainForm()
         {
@@ -27,7 +27,7 @@ namespace Cheeeeeeeeese
             Console.CursorVisible = false;
 
             IPEndPoint en2 = new IPEndPoint(IPAddress.Parse(Bot.ServerEn2), Bot.ServerPort);
-            bot.AddPlayer("user", "pass", en2);
+            bot.AddPlayer("testzord123", "", en2);
 
             bot.StartAll();
         }

@@ -74,13 +74,13 @@ namespace Cheeeeeeeeese
             }
             catch (Exception e)
             {
-                Console.WriteLine(Username + " failed to connect to " + Server.Address + ":" + Server.Port);
+                Console.WriteLine(Username + ": failed to connect to " + Server.Address + ":" + Server.Port);
                 Console.WriteLine(e.Message);
                 return;
             }
 
-            Console.WriteLine(Username + " connected to " + Server.Address + ":" + Server.Port);
-            Connected = true;
+            Console.WriteLine(Username + ": connected to " + Server.Address + ":" + Server.Port);
+            //Connected = true;
 
             NetStream = TcpClient.GetStream();
             NetStream.ReadTimeout = Timeout;
@@ -89,6 +89,8 @@ namespace Cheeeeeeeeese
             SendVersion();
 
             NetStream.BeginRead(recvBuf, 0, recvBuf.Length, new AsyncCallback(Receive), this);
+
+            while (!Connected) Thread.Sleep(Delay);
 
             while (Connected)
             {
@@ -104,7 +106,7 @@ namespace Cheeeeeeeeese
 
             if (bytesRead > 2)
             {
-                var packets = recvBuf.SplitBytes(0);
+                var packets = recvBuf.SplitBytes(0, bytesRead);
                 foreach (byte[] packet in packets)
                 {
                     // read packet type
@@ -113,29 +115,39 @@ namespace Cheeeeeeeeese
                     // find the message handler method for this message type
                     var handler = MessageHandlers[(BotMessage.Type)type];
 
-                    var splitPacket = recvBuf.Skip(2).ToUTF8().Split(new string[] {"\x01"}, StringSplitOptions.None);
+                    // this is retarded, redo it later
+                    var splitPacket = recvBuf.Skip(3).ToUTF8().Split(new string[] {"\x01"}, StringSplitOptions.RemoveEmptyEntries).ToList();
 
                     if (handler != null)
                     {
                         // found a handler, invoke it
-                        Console.WriteLine("received " + Enum.GetName(typeof(BotMessage.Type), type));
+                        Console.WriteLine(Username + ": received " + Enum.GetName(typeof(BotMessage.Type), type));
                         handler.Invoke(this, new object[] { splitPacket });
                     }
                     else
                     {
-                        Console.WriteLine("received unknown packet type " + type.ToString("{0:x2}"));
+                        Console.WriteLine(Username + ": received unknown packet type " + type.ToString("{0:x2}"));
                         // invoke default handler
                         MessageHandlers[BotMessage.Type.Default].Invoke(this, new object[] { splitPacket });
                     }
                 }
             }
 
-            // continue reading
-            NetStream.BeginRead(recvBuf, 0, recvBuf.Length, new AsyncCallback(Receive), ar);
+            try
+            {
+                // continue reading
+                NetStream.BeginRead(recvBuf, 0, recvBuf.Length, new AsyncCallback(Receive), ar);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(Username + ": Got disconnected");
+                Connected = false;
+            }
         }
 
         public void Send(OutgoingMessage.Type type, byte[] data)
         {
+            Console.WriteLine(Username + ": Sending " + Enum.GetName(typeof(OutgoingMessage.Type), type));
             var buffer = BitConverter.GetBytes((short)type).Concat(data);
             Send(buffer.ToArray());
         }
@@ -160,7 +172,7 @@ namespace Cheeeeeeeeese
         [BotMessageHandler(BotMessage.Type.OnRoomNoWin)]
         public void OnRoomNoWin(List<string> data)
         {
-            Console.WriteLine("Can't win yet");
+            Console.WriteLine(Username + ": Can't win yet");
         }
 
         [BotMessageHandler(BotMessage.Type.OnRoomGotCheese)]
@@ -169,7 +181,7 @@ namespace Cheeeeeeeeese
             int id = Int32.Parse(data[0]);
             if (id == UserId)
             {
-                Console.WriteLine("GOT DA CHEEZ!");
+                Console.WriteLine(Username + ": GOT DA CHEEZ!");
                 Send(OutgoingMessage.Type.GotCheese, "0".ToByteArray());
             }
         }
@@ -205,6 +217,7 @@ namespace Cheeeeeeeeese
             UserId = Int32.Parse(data[1]);
             UserLevel = Int32.Parse(data[2]);
             Console.WriteLine(data[0] + " logged in, " + UserId + ", " + UserLevel);
+            Connected = true;
         }
 
         [BotMessageHandler(BotMessage.Type.OnPing)]
@@ -216,7 +229,7 @@ namespace Cheeeeeeeeese
         [BotMessageHandler(BotMessage.Type.OnVersion)]
         public void OnVersion(List<string> data)
         {
-            Console.WriteLine(Username + ": " + data[0] + " players");
+            Console.WriteLine(Username + ": " + data[0] + " players currently online");
             SendLogin(DefaultRoom);
         }
 
@@ -228,6 +241,7 @@ namespace Cheeeeeeeeese
 
         public void SendVersion()
         {
+            Console.WriteLine(Username + ": Sending version " + Bot.Version);
             Send(Bot.Version.ToByteArray());
         }
 
