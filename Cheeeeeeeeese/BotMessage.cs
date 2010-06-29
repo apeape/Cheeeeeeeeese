@@ -26,6 +26,9 @@ namespace Cheeeeeeeeese
             OnUserLogin = 26|8<<8,
             OnPing = 26|26<<8,
             OnVersion = 26|27<<8,
+            OnInventory = 20|20<<8,
+            OnLoginError = 26 | 3 << 8,
+
             Default = -1,
         }
     }
@@ -65,11 +68,12 @@ namespace Cheeeeeeeeese
         {
             Login = 26|4<<8,
             Four20 = 4|20<<8,
-            GotCheese = 5|18<<8,
+            EnterHole = 5|18<<8,
             PingTime = 26|2<<8,
             Ping = 26|26<<8,
             Win = 5|18<<8,
-            RoomStart = 5|19<<8,
+            GrabCheese = 5|19<<8,
+            CheckInventory = 20|20<<8,
         }
     }
 

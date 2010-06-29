@@ -32,6 +32,8 @@ namespace Cheeeeeeeeese
             ServerComboBox.SelectedIndex = 1;
 
             RoomTxt.Text = Player.DefaultRoom;
+
+            VersionTxt.Text = Bot.Version;
         }
 
         private void LoginButton_Click(object sender, EventArgs e)
@@ -39,7 +41,7 @@ namespace Cheeeeeeeeese
             if (String.IsNullOrEmpty(UsernameTxt.Text)) return;
 
             IPEndPoint server = new IPEndPoint(IPAddress.Parse(ServerComboBox.SelectedItem.ToString()), Bot.ServerPort);
-            bot.AddPlayer(UsernameTxt.Text, PasswordTxt.Text, RoomTxt.Text, server);
+            bot.AddPlayer(UsernameTxt.Text, PasswordTxt.Text, RoomTxt.Text, VersionTxt.Text, server);
 
             bot.StartAll();
         }
@@ -47,6 +49,27 @@ namespace Cheeeeeeeeese
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             Bot.Running = false;
+        }
+
+        private void UsernameTxt_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void UsernameTxt_TextChanged(object sender, EventArgs e)
+        {
+            var cursorPos = UsernameTxt.SelectionStart;
+            foreach (char i in UsernameTxt.Text)
+            {
+                if (!char.IsLetter(i))
+                {
+                    UsernameTxt.Text = UsernameTxt.Text.Replace(i.ToString(), "");
+                }
+            }
+            UsernameTxt.SelectionStart = cursorPos;
         }
     }
 }

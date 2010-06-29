@@ -11,12 +11,23 @@ namespace Cheeeeeeeeese.Util
         public static byte[] SHA256(string str)
         {
             SHA256 sha = new SHA256Managed();
-            return sha.ComputeHash(str.ToByteArray());
+            sha.Initialize();
+            //return sha.ComputeHash(str.ToByteArray());
+            return sha.ComputeHash(Encoding.UTF8.GetBytes(str));
         }
         public static string SHA256String(string str)
         {
-            SHA256 sha = new SHA256Managed();
-            return sha.ComputeHash(str.ToByteArray()).ToHexString();
+            /*
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in SHA256(str))
+            {
+                sb.Append(b.ToString("X2"));
+            }
+            return sb.ToString();*/
+
+            return SHA256(str).ToHexString().ToLower();
+
+            //return Convert.ToBase64String(SHA256(str));
         }
     }
 }

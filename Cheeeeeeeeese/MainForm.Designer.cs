@@ -36,7 +36,9 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.VersionTxt = new System.Windows.Forms.TextBox();
             this.RoomTxt = new System.Windows.Forms.TextBox();
+            this.label5 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
@@ -47,6 +49,8 @@
             this.UsernameTxt.Name = "UsernameTxt";
             this.UsernameTxt.Size = new System.Drawing.Size(100, 20);
             this.UsernameTxt.TabIndex = 1;
+            this.UsernameTxt.TextChanged += new System.EventHandler(this.UsernameTxt_TextChanged);
+            this.UsernameTxt.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.UsernameTxt_KeyPress);
             // 
             // PasswordTxt
             // 
@@ -104,9 +108,11 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.VersionTxt);
             this.panel1.Controls.Add(this.RoomTxt);
             this.panel1.Controls.Add(this.label3);
             this.panel1.Controls.Add(this.UsernameTxt);
+            this.panel1.Controls.Add(this.label5);
             this.panel1.Controls.Add(this.label4);
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.PasswordTxt);
@@ -118,12 +124,28 @@
             this.panel1.Size = new System.Drawing.Size(183, 132);
             this.panel1.TabIndex = 4;
             // 
+            // VersionTxt
+            // 
+            this.VersionTxt.Location = new System.Drawing.Point(53, 104);
+            this.VersionTxt.Name = "VersionTxt";
+            this.VersionTxt.Size = new System.Drawing.Size(41, 20);
+            this.VersionTxt.TabIndex = 6;
+            // 
             // RoomTxt
             // 
             this.RoomTxt.Location = new System.Drawing.Point(75, 78);
             this.RoomTxt.Name = "RoomTxt";
             this.RoomTxt.Size = new System.Drawing.Size(100, 20);
             this.RoomTxt.TabIndex = 3;
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(5, 107);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(42, 13);
+            this.label5.TabIndex = 3;
+            this.label5.Text = "Version";
             // 
             // label4
             // 
@@ -163,6 +185,8 @@
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.TextBox RoomTxt;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TextBox VersionTxt;
+        private System.Windows.Forms.Label label5;
     }
 }
 
