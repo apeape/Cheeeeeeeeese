@@ -60,6 +60,7 @@ namespace Cheeeeeeeeese
 
         public void Run(int Delay)
         {
+            Started = true;
             try
             {
                 TcpClient = new TcpClient(Server.Address.ToString(), Server.Port);
