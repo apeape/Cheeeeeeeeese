@@ -16,6 +16,8 @@ namespace Cheeeeeeeeese
     {
         #region Constants/Variables
 
+        public const bool ShowOffMode = false;
+
         public const int DefaultDelay = 500;
         public const int ReconnectDelay = 15000;
         public const int Timeout = 20000;
@@ -50,7 +52,71 @@ namespace Cheeeeeeeeese
         public DateTime SendWin { get; set; }
         public DateTime LastPing { get; set; }
 
+        private char[] MDT = new char[10];
+        private int CMDTEC;
+
         private Random rand = new Random((int)DateTime.Now.Ticks);
+
+        public enum Objects
+        {
+            PurpleArrow = 0,
+            LittleBox = 1,
+            BigBox = 2,
+            ShortPlank = 3,
+            LongPlank = 4,
+            GraySphere = 5,
+            BouncyBall = 6,
+            Trampoline = 7,
+            ShortPurple = 8,
+            LongPurple = 9,
+            Anvil = 10,
+            RedDot = 11,
+            RedDotArrow = 12,
+            RedDotArrow2 = 13,
+            TealDot = 14,
+            TealDotArrow = 15,
+            TealDotArrow2 = 16,
+            UpSphere = 17,
+            DownSphere = 18,
+            RightSphere = 19,
+            LeftSphere = 20,
+            GreenSphere = 21,
+            YellowDot = 22,
+            Bomb = 23,
+            Explosion = 24,
+            Cheese = 25,
+        }
+
+
+
+        /*
+        0 = purple arrow
+        1 = little box
+        2 = big box
+        3 = short plank
+        4 = long plank
+        5 = grayscale sphere
+        6 = bouncy ball
+        7 = bouncy platform
+        8 = short purple wire thing
+        9 = long purple wire thing
+        10 = anvil
+        11 = red dot
+        12 = red dot with arrow
+        13 = red dot with arrow
+        14 = teal dot
+        15 = teal dot with arrow
+        16 = teal dot with arrow
+        17 = up sphere
+        18 = down sphere
+        19 = right sphere
+        20 = left sphere
+        21 = green sphere
+        22 = yellow dot
+        23 = bomb
+        24 = explosion
+        25 = cheese
+        */
         #endregion
 
         public Player(string username, string password, string room, string version, IPEndPoint server, IPEndPoint proxy, ProxyType proxyType) : this(username, password, room, version, server)
@@ -205,8 +271,8 @@ namespace Cheeeeeeeeese
             {
                 //Send(OutgoingMessage.Type.CheckInventory);
                 SendWin = DateTime.MinValue;
-                //Console.WriteLine(Username + ": Sending Win");
-                //Send(OutgoingMessage.Type.Win, new byte[] { 0 });
+                Console.WriteLine(Username + ": Sending Win");
+                Send(OutgoingMessage.Type.Win, new byte[] { 0 });
             }
         }
 
@@ -242,10 +308,9 @@ namespace Cheeeeeeeeese
                             // found a handler, invoke it
                             var handler = MessageHandlers[(IncomingMessage.Type)type];
                             
-                            
-                            //Console.WriteLine(Username + ": received " + Enum.GetName(typeof(IncomingMessage.Type), type));
-
                             /*
+                            Console.WriteLine(Username + ": received " + Enum.GetName(typeof(IncomingMessage.Type), type));
+                                                        
                             Console.WriteLine("[" + packet[0] + ", " + packet[1] + "] " + packet.Skip(3).ToArray().ToHexString());
                             Console.WriteLine(String.Join(", ", splitPacket.ToArray()));
                             Console.WriteLine("-----------------------------------------------");
@@ -317,6 +382,26 @@ namespace Cheeeeeeeeese
 
             List<byte> data = new List<byte>();
 
+            //var _loc_2:* = String(this.CMDTEC % 9000 + 1000).split("");
+            //this.Serveur.send(this.MDT[_loc_2[0]] + this.MDT[_loc_2[1]] + this.MDT[_loc_2[2]] + this.MDT[_loc_2[3]] + param1);
+            //var _loc_3:String = this;
+            //var _loc_4:* = this.CMDTEC + 1;
+            //_loc_3.CMDTEC = _loc_4;
+
+            if (CMDTEC != 0)
+            {
+                string CMDTEC2 = (CMDTEC % 9000 + 1000).ToString();
+                char a = MDT[Int32.Parse(CMDTEC2[0].ToString())];
+                char b = MDT[Int32.Parse(CMDTEC2[1].ToString())];
+                char c = MDT[Int32.Parse(CMDTEC2[2].ToString())];
+                char d = MDT[Int32.Parse(CMDTEC2[3].ToString())];
+
+                data.Add((byte)a);
+                data.Add((byte)b);
+                data.Add((byte)c);
+                data.Add((byte)d);
+            }
+
             if (args.Count() == 1)
                 data.AddRange((byte[])args[0]); // don't add delimiter
             else
@@ -333,6 +418,7 @@ namespace Cheeeeeeeeese
             try
             {
                 NetStream.Write(data.ToArray(), 0, data.Count());
+                CMDTEC++;
             }
             catch (Exception e)
             {
@@ -476,70 +562,96 @@ namespace Cheeeeeeeeese
                 Send(OutgoingMessage.Type.GrabCheese);
             }
 
+            //Spiral(Objects.PurpleArrow);
 
-
-            //this._root.Création_Objet_Monde(23, 675, 100, 0, -1);
-            //this._root.Demande_Explosion(23, 675, 100, 100);
-            //this.Envoie_Serveur(this.$5 + this.$17 + this.$1 + param1 + this.$1 + param2 + this.$1 + param3 + this.$1 + param4 + this.$1 + 0);
-            // place object
-            //this.Envoie_Serveur(_loc_2 + this.$1 + this.PosFinObjetX + this.$1 + (this.PosFinObjetY - 3) + this.$1 + int(_loc_1.rotation) + this.$1 + 0 + this.$1 + 0 + this.$1 + String(_loc_1.Dur ? (1) : (0)));
-            //var _local2:int = _local1.Code;
-
-            //Mouse-*aadabfcd - (5, 7): 14,1,0,0,0,0,-0.333,-0.338,0
-            //Mouse-*dcfbaeeb - (5, 7): 14,2,0.633,0,0,0,-0.848,0.461,0
-
-            //<Rick> Mouse-*dfffabcb - (5, 8): 126722, 1, 175, 327, 0
-            //<Rick> Mouse-*dfffabcb - (5, 20): 126722, 1, 175, 324, 0, 0, 0, 1
-            //<Rick> Mouse-*dfffabcb - (5, 9): 126722
-
-
-            int proc = rand.Next(0, 100);
-            if(proc < 33)
+            if (ShowOffMode)
             {
-                FireWorks();
+                int proc = rand.Next(0, 100);
+                if (proc < 25)
+                    FireWorks();
+                else if (proc > 25 && proc < 50)
+                    Garbage();
+                else if (proc > 50 && proc < 75)
+                    Cheeeeese();
+                else
+                    Spiral(Objects.PurpleArrow);
             }
-            else if (proc > 33 && proc < 66)
+            
+        }
+
+        private Object PartyTimeLock = new Object();
+
+        public const int stageWidth = 850;
+        public const int stageHeight = 400;
+        public const int stageCenterX = stageWidth / 2;
+        public const int stageCenterY = stageHeight / 2;
+
+        public void Spiral(Objects obj)
+        {
+            lock (PartyTimeLock)
             {
-                Garbage();
+                if (CurrentShamans.Contains(Username))
+                {
+                    Console.WriteLine(Username + ": doing spiral");
+
+                    VerticalObjectWipe(60, false, Objects.PurpleArrow);
+                    Thread.Sleep(600);
+
+                    double anglemod = 0;
+                    for (int i = 0; i < 5; i++, anglemod += 0.3)
+                    {
+                        
+                        Console.WriteLine(Username + ": round " + i);
+                        for (double angle = 0, radius = 10; angle < 360; angle += 0.7 + anglemod, radius += 1.2)
+                        {
+                            int x = stageCenterX + (int)(radius * Math.Cos(angle));
+                            int y = stageCenterY + (int)(radius * Math.Sin(angle));
+
+                            if (obj == Objects.PurpleArrow)
+                                PlaceArrow("0", x.ToString(), y.ToString(), angle.ToString(), false);
+                            else
+                                PlaceObject(obj.ToString(), x.ToString(), y.ToString(), angle.ToString(), false);
+
+                            Thread.Sleep(10);
+                        }
+                        Thread.Sleep(250);
+                    }
+                }
+            }
+        }
+
+        public void VerticalObjectWipe(int delay, bool TopDown, Objects obj)
+        {
+            if (TopDown)
+            {
+                for (int y = 50; y <= 400; y += 20)
+                {
+                    for (int x = 25; x < 850; x += 28)
+                    {
+                        if (obj == Objects.PurpleArrow)
+                            PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                        else
+                            PlaceObject(obj.ToString(), x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+
+                    }
+                    Thread.Sleep(60);
+                }
             }
             else
             {
-                Cheeeeese();
+                for (int y = 400; y >= 50; y -= 20)
+                {
+                    for (int x = 25; x < 850; x += 35)
+                    {
+                        if (obj == Objects.PurpleArrow)
+                            PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                        else
+                            PlaceObject(obj.ToString(), x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                    }
+                    Thread.Sleep(delay);
+                }
             }
-
         }
-
-
-        /*
-        0 = purple arrow
-        1 = little box
-        2 = big box
-        3 = short plank
-        4 = long plank
-        5 = grayscale sphere
-        6 = bouncy ball
-        7 = bouncy platform
-        8 = short purple wire thing
-        9 = long purple wire thing
-        10 = anvil
-        11 = red dot
-        12 = red dot with arrow
-        13 = red dot with arrow
-        14 = teal dot
-        15 = teal dot with arrow
-        16 = teal dot with arrow
-        17 = up sphere
-        18 = down sphere
-        19 = right sphere
-        20 = left sphere
-        21 = green sphere
-        22 = yellow dot
-        23 = bomb
-        24 = explosion
-        25 = cheese
-        */
-
-        private Object PartyTimeLock = new Object();
 
         public void Garbage()
         {
@@ -551,14 +663,7 @@ namespace Cheeeeeeeeese
                     int x;
                     int y;
 
-                    for (y = 400; y >= 50; y -= 20)
-                    {
-                        for (x = 25; x < 850; x += 35)
-                        {
-                            PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
-                        }
-                        Thread.Sleep(100);
-                    }
+                    VerticalObjectWipe(100, false, Objects.PurpleArrow);
 
                     x = rand.Next(25, 850);
                     y = rand.Next(0, 400);
@@ -587,14 +692,7 @@ namespace Cheeeeeeeeese
                     int x;
                     int y;
 
-                    for (y = 400; y >= 50; y -= 20)
-                    {
-                        for (x = 25; x < 850; x += 35)
-                        {
-                            PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
-                        }
-                        Thread.Sleep(100);
-                    }
+                    VerticalObjectWipe(100, false, Objects.PurpleArrow);
 
                     x = rand.Next(25, 850);
                     y = rand.Next(0, 400);
@@ -619,74 +717,27 @@ namespace Cheeeeeeeeese
                 if (CurrentShamans.Contains(Username))
                 {
                     Console.WriteLine(Username + ": doing fireworks");
-                    //int x = 250;
                     for (int i = 0; i < 15; i++)
                     {
-                        for (int y = 400; y >= 50; y -= 20)
-                        {
-                            for (int x = 25; x < 850; x += 35)
-                            {
-                                PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
-                            }
-                            Thread.Sleep(60);
-                        }
-                        Thread.Sleep(600);
-                        for (int y = 50; y <= 400; y += 20)
-                        {
-                            for (int x = 25; x < 850; x += 35)
-                            {
-                                PlaceObject("14", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
-                            }
-                            Thread.Sleep(60);
-                        }
-                        Thread.Sleep(300);
-
-                        for (int y = 400; y >= 50; y -= 20)
-                        {
-                            for (int x = 25; x < 850; x += 35)
-                            {
-                                PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
-                            }
-                            Thread.Sleep(60);
-                        }
-                        Thread.Sleep(600);
-                        for (int y = 50; y <= 400; y += 20)
-                        {
-                            for (int x = 25; x < 850; x += 32)
-                            {
-                                PlaceObject("22", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
-                            }
-                            Thread.Sleep(60);
-                        }
-                        Thread.Sleep(300);
-
-                        for (int y = 400; y >= 50; y -= 20)
-                        {
-                            for (int x = 25; x < 850; x += 26)
-                            {
-                                PlaceObject("11", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
-                            }
-                            Thread.Sleep(60);
-                        }
-                        Thread.Sleep(300);
-                        for (int y = 50; y <= 400; y += 20)
-                        {
-                            for (int x = 25; x < 850; x += 28)
-                            {
-                                PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
-                            }
-                            Thread.Sleep(60);
-                        }
+                        VerticalObjectWipe(60, false, Objects.PurpleArrow);
                         Thread.Sleep(600);
 
-                        for (int y = 400; y >= 50; y -= 20)
-                        {
-                            for (int x = 25; x < 850; x += 20)
-                            {
-                                PlaceObject("14", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
-                            }
-                            Thread.Sleep(60);
-                        }
+                        VerticalObjectWipe(60, true, Objects.TealDot);
+                        Thread.Sleep(300);
+                        
+                        VerticalObjectWipe(60, false, Objects.PurpleArrow);
+                        Thread.Sleep(600);
+
+                        VerticalObjectWipe(60, true, Objects.YellowDot);
+                        Thread.Sleep(300);
+
+                        VerticalObjectWipe(60, false, Objects.RedDot);
+                        Thread.Sleep(300);
+
+                        VerticalObjectWipe(60, true, Objects.PurpleArrow);
+                        Thread.Sleep(600);
+
+                        VerticalObjectWipe(60, false, Objects.TealDot);
                         Thread.Sleep(300);
                     }
 
@@ -726,6 +777,37 @@ namespace Cheeeeeeeeese
         [BotMessageHandler(IncomingMessage.Type.OnVersion)]
         public void OnVersion(List<string> data)
         {
+            /*
+                    data = _loc_3[2].split(""); // data
+                    i = 0;
+                    while (i < 10)
+                    {
+                        
+                        x = int(data[i]);
+                        if (_loc_27 == 0)
+                        {
+                            this.MDT[i] = String.fromCharCode(10);
+                        }
+                        else
+                        {
+                            this.MDT[i] = String.fromCharCode(x);
+                        }
+                        i++;
+                    }
+                    this.CMDTEC = int(_loc_3[3]);
+             */
+
+            var data2 = data[1];
+            for (int i = 0; i < 10; i++)
+            {
+                int x = Int32.Parse(data2[i].ToString());
+                if (x == 0)
+                    MDT[i] = '\x0a';
+                else
+                    MDT[i] = (char)x;
+            }
+            CMDTEC = Int32.Parse(data[2]);
+
             Console.WriteLine(Username + ": " + data[0] + " players currently online");
             SendLogin();
         }

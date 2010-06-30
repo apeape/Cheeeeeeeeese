@@ -10,7 +10,7 @@ namespace Cheeeeeeeeese
 {
     public class Bot
     {
-        public const string Version = "0.30\0";
+        public const string Version = "0.32";
         public static IPEndPoint ServerEn1 = new IPEndPoint(IPAddress.Parse("91.121.157.83"), 443);
         public static IPEndPoint ServerEn2 = new IPEndPoint(IPAddress.Parse("91.121.116.13"), 44444);
 

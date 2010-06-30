@@ -68,6 +68,7 @@ namespace Cheeeeeeeeese
     {
         public enum Type : ushort
         {
+            Register = 26|3<<8,
             Login = 26|4<<8,
             Four20 = 4|20<<8,
             EnterHole = 5|18<<8,
