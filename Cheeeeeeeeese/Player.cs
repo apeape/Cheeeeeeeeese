@@ -41,6 +41,7 @@ namespace Cheeeeeeeeese
         public int UserLevel { get; set; }
         public string CurrentRoom { get; set; }
         public List<string> CurrentPlayers { get; set; }
+        public List<string> PlayersWithoutCheese { get; set; }
         public List<string> CurrentShamans { get; set; }
         public ulong Cheese { get; set; }
 
@@ -92,11 +93,12 @@ namespace Cheeeeeeeeese
             {
                 if (!Connected)
                 {
+                    /*
                     if ((DateTime.Now - StartTime).TotalMilliseconds >= Player.Timeout)
                     {
                         Console.WriteLine(Username + ": Timed out while trying to connect");
                         break;
-                    }
+                    }*/
                     Thread.Sleep(Delay);
                 }
 
@@ -199,8 +201,9 @@ namespace Cheeeeeeeeese
                 Console.WriteLine(Username + ": <-Pong2");
             }
 
-            if (SendWin != DateTime.MinValue && (now - SendWin).TotalSeconds >= 2)
+            if (SendWin != DateTime.MinValue && (now - SendWin).TotalSeconds >= 10)
             {
+                Send(OutgoingMessage.Type.CheckInventory);
                 SendWin = DateTime.MinValue;
                 Console.WriteLine(Username + ": Sending Win");
                 Send(OutgoingMessage.Type.Win, new byte[] { 0 });
@@ -338,7 +341,10 @@ namespace Cheeeeeeeeese
                 ulong oldcheese = Cheese;
                 Cheese = ulong.Parse(data[0]);
                 if (Cheese > oldcheese)
+                {
+                    Console.Title = Username + ": Current Cheese: " + Cheese;
                     Console.WriteLine(Username + ": Current Cheese: " + Cheese);
+                }
             }
             catch (Exception)
             {
@@ -378,7 +384,20 @@ namespace Cheeeeeeeeese
                 // go in the hole if we're not a shaman
                 if (!CurrentShamans.Contains(Username))
                     Send(OutgoingMessage.Type.EnterHole, "0".ToByteArray());
-                else Console.WriteLine("Can't win, we're the shaman");
+                else Console.WriteLine(Username + ": Can't win yet, we're the shaman");
+            }
+            // remove whoever got it from the players without cheese list
+            else
+            {
+                PlayersWithoutCheese.RemoveAll(p => p.Contains(id.ToString()));
+                if (PlayersWithoutCheese.Count == 1 && PlayersWithoutCheese.Where(p => p.Contains(Username)).Count() == 1 && CurrentShamans.Contains(Username))
+                {
+                    // finally we can finish!
+                    Console.WriteLine(Username + ": Everyone else is done, going to the hole!");
+                    Send(OutgoingMessage.Type.EnterHole, "0".ToByteArray());
+                }
+                else
+                    Console.WriteLine(Username + ": " + PlayersWithoutCheese.Count + " players still don't have the cheese!");
             }
         }
 
@@ -393,6 +412,7 @@ namespace Cheeeeeeeeese
         public void OnRoomPlayers(List<string> data)
         {
             CurrentPlayers = data;
+            PlayersWithoutCheese = data;
             Console.WriteLine(Username + ": got player list: " + String.Join(", ", CleanNames(data).ToArray()));
         }
 
@@ -430,10 +450,12 @@ namespace Cheeeeeeeeese
                 Console.WriteLine(Username + ": All alone, can't get any cheese =(");
                 return;
             }
+            // should be able to pick it up as long as we don't go in the hole until everyone else is done
+            /*
             else if (CurrentShamans.Contains(Username))
             {
                 Console.WriteLine(Username + ": You are a shaman, can't get any cheese =(");
-            }
+            }*/
             else
             {
                 Console.WriteLine(Username + ": " + CurrentPlayers.Count + " players present: Grabbing cheese");
