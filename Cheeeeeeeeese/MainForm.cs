@@ -73,14 +73,16 @@ namespace Cheeeeeeeeese
 
         private void UsernameTxt_KeyPress(object sender, KeyPressEventArgs e)
         {
+            /*
             if (!char.IsLetter(e.KeyChar) && !char.IsControl(e.KeyChar))
             {
                 e.Handled = true;
-            }
+            }*/
         }
 
         private void UsernameTxt_TextChanged(object sender, EventArgs e)
         {
+            /*
             var cursorPos = UsernameTxt.SelectionStart;
             foreach (char i in UsernameTxt.Text)
             {
@@ -89,7 +91,7 @@ namespace Cheeeeeeeeese
                     UsernameTxt.Text = UsernameTxt.Text.Replace(i.ToString(), "");
                 }
             }
-            UsernameTxt.SelectionStart = cursorPos;
+            UsernameTxt.SelectionStart = cursorPos;*/
         }
     }
 }

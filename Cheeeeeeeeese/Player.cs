@@ -50,7 +50,7 @@ namespace Cheeeeeeeeese
         public DateTime SendWin { get; set; }
         public DateTime LastPing { get; set; }
 
-        private Random rand = new Random();
+        private Random rand = new Random((int)DateTime.Now.Ticks);
         #endregion
 
         public Player(string username, string password, string room, string version, IPEndPoint server, IPEndPoint proxy, ProxyType proxyType) : this(username, password, room, version, server)
@@ -201,12 +201,12 @@ namespace Cheeeeeeeeese
                 Console.WriteLine(Username + ": <-Pong2");
             }
 
-            if (SendWin != DateTime.MinValue && (now - SendWin).TotalSeconds >= 10)
+            if (SendWin != DateTime.MinValue && (now - SendWin).TotalSeconds >= 1)
             {
-                Send(OutgoingMessage.Type.CheckInventory);
+                //Send(OutgoingMessage.Type.CheckInventory);
                 SendWin = DateTime.MinValue;
-                Console.WriteLine(Username + ": Sending Win");
-                Send(OutgoingMessage.Type.Win, new byte[] { 0 });
+                //Console.WriteLine(Username + ": Sending Win");
+                //Send(OutgoingMessage.Type.Win, new byte[] { 0 });
             }
         }
 
@@ -283,6 +283,19 @@ namespace Cheeeeeeeeese
         public void Send(OutgoingMessage.Type type)
         {
             Send(BitConverter.GetBytes((short)type));
+        }
+
+        public void Send(OutgoingMessage.Type type, params string[] args)
+        {
+            // this code is baby shit
+            List<byte[]> args2 = new List<byte[]>();
+            args2.Add(BitConverter.GetBytes((short)type));
+            foreach (string arg in args)
+            {
+                args2.Add(arg.ToByteArray());
+            }
+
+            Send(args2.ToArray());
         }
 
         public void Send(OutgoingMessage.Type type, params object[] args)
@@ -462,6 +475,237 @@ namespace Cheeeeeeeeese
                 //Thread.Sleep(rand.Next(3000, 7000));
                 Send(OutgoingMessage.Type.GrabCheese);
             }
+
+
+
+            //this._root.Création_Objet_Monde(23, 675, 100, 0, -1);
+            //this._root.Demande_Explosion(23, 675, 100, 100);
+            //this.Envoie_Serveur(this.$5 + this.$17 + this.$1 + param1 + this.$1 + param2 + this.$1 + param3 + this.$1 + param4 + this.$1 + 0);
+            // place object
+            //this.Envoie_Serveur(_loc_2 + this.$1 + this.PosFinObjetX + this.$1 + (this.PosFinObjetY - 3) + this.$1 + int(_loc_1.rotation) + this.$1 + 0 + this.$1 + 0 + this.$1 + String(_loc_1.Dur ? (1) : (0)));
+            //var _local2:int = _local1.Code;
+
+            //Mouse-*aadabfcd - (5, 7): 14,1,0,0,0,0,-0.333,-0.338,0
+            //Mouse-*dcfbaeeb - (5, 7): 14,2,0.633,0,0,0,-0.848,0.461,0
+
+            //<Rick> Mouse-*dfffabcb - (5, 8): 126722, 1, 175, 327, 0
+            //<Rick> Mouse-*dfffabcb - (5, 20): 126722, 1, 175, 324, 0, 0, 0, 1
+            //<Rick> Mouse-*dfffabcb - (5, 9): 126722
+
+
+            int proc = rand.Next(0, 100);
+            if(proc < 33)
+            {
+                FireWorks();
+            }
+            else if (proc > 33 && proc < 66)
+            {
+                Garbage();
+            }
+            else
+            {
+                Cheeeeese();
+            }
+
+        }
+
+
+        /*
+        0 = purple arrow
+        1 = little box
+        2 = big box
+        3 = short plank
+        4 = long plank
+        5 = grayscale sphere
+        6 = bouncy ball
+        7 = bouncy platform
+        8 = short purple wire thing
+        9 = long purple wire thing
+        10 = anvil
+        11 = red dot
+        12 = red dot with arrow
+        13 = red dot with arrow
+        14 = teal dot
+        15 = teal dot with arrow
+        16 = teal dot with arrow
+        17 = up sphere
+        18 = down sphere
+        19 = right sphere
+        20 = left sphere
+        21 = green sphere
+        22 = yellow dot
+        23 = bomb
+        24 = explosion
+        25 = cheese
+        */
+
+        private Object PartyTimeLock = new Object();
+
+        public void Garbage()
+        {
+            lock (PartyTimeLock)
+            {
+                if (CurrentShamans.Contains(Username))
+                {
+                    Console.WriteLine(Username + ": doing garbage avalanch");
+                    int x;
+                    int y;
+
+                    for (y = 400; y >= 50; y -= 20)
+                    {
+                        for (x = 25; x < 850; x += 35)
+                        {
+                            PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                        }
+                        Thread.Sleep(100);
+                    }
+
+                    x = rand.Next(25, 850);
+                    y = rand.Next(0, 400);
+
+
+                    for (int i = 0; i < 15; i++)
+                    {
+                        for (int j = 0; j < 30; j++)
+                        {
+                            PlaceObject(rand.Next(0, 25).ToString(), (x = rand.Next(25, 850)).ToString(), (y = rand.Next(0, 100)).ToString(), (x + y % 360).ToString(), false);
+                            Thread.Sleep(30);
+                        }
+                        Thread.Sleep(100);
+                    }
+                }
+            }
+        }
+
+        public void Cheeeeese()
+        {
+            lock (PartyTimeLock)
+            {
+                if (CurrentShamans.Contains(Username))
+                {
+                    Console.WriteLine(Username + ": doing cheeese avalanch");
+                    int x;
+                    int y;
+
+                    for (y = 400; y >= 50; y -= 20)
+                    {
+                        for (x = 25; x < 850; x += 35)
+                        {
+                            PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                        }
+                        Thread.Sleep(100);
+                    }
+
+                    x = rand.Next(25, 850);
+                    y = rand.Next(0, 400);
+
+                    for (int i = 0; i < 20; i++)
+                    {
+                        for (int j = 0; j < 25; j++)
+                        {
+                            PlaceObject("25", (x = rand.Next(25, 850)).ToString(), (y = rand.Next(0, 100)).ToString(), (x + y % 360).ToString(), false);
+                            Thread.Sleep(10);
+                        }
+                        Thread.Sleep(45);
+                    }
+                }
+            }
+        }
+
+        public void FireWorks()
+        {
+            lock (PartyTimeLock)
+            {
+                if (CurrentShamans.Contains(Username))
+                {
+                    Console.WriteLine(Username + ": doing fireworks");
+                    //int x = 250;
+                    for (int i = 0; i < 15; i++)
+                    {
+                        for (int y = 400; y >= 50; y -= 20)
+                        {
+                            for (int x = 25; x < 850; x += 35)
+                            {
+                                PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            }
+                            Thread.Sleep(60);
+                        }
+                        Thread.Sleep(600);
+                        for (int y = 50; y <= 400; y += 20)
+                        {
+                            for (int x = 25; x < 850; x += 35)
+                            {
+                                PlaceObject("14", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            }
+                            Thread.Sleep(60);
+                        }
+                        Thread.Sleep(300);
+
+                        for (int y = 400; y >= 50; y -= 20)
+                        {
+                            for (int x = 25; x < 850; x += 35)
+                            {
+                                PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            }
+                            Thread.Sleep(60);
+                        }
+                        Thread.Sleep(600);
+                        for (int y = 50; y <= 400; y += 20)
+                        {
+                            for (int x = 25; x < 850; x += 32)
+                            {
+                                PlaceObject("22", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            }
+                            Thread.Sleep(60);
+                        }
+                        Thread.Sleep(300);
+
+                        for (int y = 400; y >= 50; y -= 20)
+                        {
+                            for (int x = 25; x < 850; x += 26)
+                            {
+                                PlaceObject("11", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            }
+                            Thread.Sleep(60);
+                        }
+                        Thread.Sleep(300);
+                        for (int y = 50; y <= 400; y += 20)
+                        {
+                            for (int x = 25; x < 850; x += 28)
+                            {
+                                PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            }
+                            Thread.Sleep(60);
+                        }
+                        Thread.Sleep(600);
+
+                        for (int y = 400; y >= 50; y -= 20)
+                        {
+                            for (int x = 25; x < 850; x += 20)
+                            {
+                                PlaceObject("14", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            }
+                            Thread.Sleep(60);
+                        }
+                        Thread.Sleep(300);
+                    }
+
+                }
+            }
+        }
+
+        public void PlaceObject(string id, string x, string y, string rotation, bool ghost)
+        {
+            string ghostbool = ghost ? "0" : "1";
+            Send(OutgoingMessage.Type.StartPlaceObject, id, x, y, ghostbool);
+            Send(OutgoingMessage.Type.ValidatePlaceObject, id, x, y, rotation, "0", "0", ghostbool);
+            Send(OutgoingMessage.Type.FinishPlaceObject);
+        }
+
+        public void PlaceArrow(string id, string x, string y, string rotation, bool ghost)
+        {
+            string ghostbool = ghost ? "0" : "1";
+            Send(OutgoingMessage.Type.ValidatePlaceObject, id, x, y, rotation, "0", "0", ghostbool);
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnUserLogin)]

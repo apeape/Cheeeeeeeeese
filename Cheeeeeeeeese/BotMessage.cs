@@ -11,28 +11,11 @@ namespace Cheeeeeeeeese
         public const byte Delimiter = 1;
         public const byte End = 0;
     }
+
     public static class IncomingMessage
     {
         public enum Type : ushort
         {
-            /*
-            On420 = 4|20<<8,
-            OnRoomStart = 5|5<<8,
-            OnRoomNoWin = 8|18<<8,
-            OnRoomGotCheese = 5|19<<8,
-            OnRoomJoin = 5|21<<8,
-            OnRoomPlayers = 8|9<<8,
-            OnRoomTransform = 8|20<<8,
-            OnRoomSync = 8|21<<8,
-            OnUserLogin = 26|8<<8,
-            OnPing = 26|26<<8,
-            OnVersion = 26|27<<8,
-            OnInventory = 20|20<<8,
-            OnLoginError = 26 | 3 << 8,
-            OnChat = 26 | 4 << 8,
-            OnBanned = 26 | 17 << 8,
-            OnPermaBanned = 26 | 18 << 8,
-             */
             On420 = 4|20<<8,
             OnRoomStart = 5|5<<8,
             OnRoomNoWin = 8|18<<8,
@@ -93,6 +76,12 @@ namespace Cheeeeeeeeese
             Win = 5|18<<8,
             GrabCheese = 5|19<<8,
             CheckInventory = 20|20<<8,
+
+            StartPlaceObject = 5 | 8 << 8,
+            ValidatePlaceObject = 5 | 20 << 8,
+            FinishPlaceObject = 5|9<<8,
+            CreateWorldObject = 5 | 21 << 8,
+            RequestExplosion = 5 | 17 << 8,
         }
     }
 
