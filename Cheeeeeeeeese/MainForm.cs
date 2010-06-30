@@ -32,7 +32,6 @@ namespace Cheeeeeeeeese
             ServerComboBox.Items.Add(Bot.ServerEn2);
             ServerComboBox.SelectedIndex = 1;
 
-            //filterType.Properties.Items.AddRange(Enum.GetNames(typeof(WarehouseObject.FilterType)));
             ProxyTypeComboBox.Items.AddRange(Enum.GetNames(typeof(ProxyType)));
             ProxyTypeComboBox.SelectedIndex = 4;
 

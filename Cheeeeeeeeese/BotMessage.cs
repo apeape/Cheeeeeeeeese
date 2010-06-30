@@ -13,8 +13,9 @@ namespace Cheeeeeeeeese
     }
     public static class IncomingMessage
     {
-        public enum Type : short
+        public enum Type : ushort
         {
+            /*
             On420 = 4|20<<8,
             OnRoomStart = 5|5<<8,
             OnRoomNoWin = 8|18<<8,
@@ -31,14 +32,29 @@ namespace Cheeeeeeeeese
             OnChat = 26 | 4 << 8,
             OnBanned = 26 | 17 << 8,
             OnPermaBanned = 26 | 18 << 8,
-
-            Default = -1,
+             */
+            On420 = 4|20<<8,
+            OnRoomStart = 5|5<<8,
+            OnRoomNoWin = 8|18<<8,
+            OnRoomGotCheese = 5|19<<8,
+            OnRoomJoin = 5|21<<8,
+            OnRoomPlayers = 8|9<<8,
+            OnRoomTransform = 8|20<<8,
+            OnRoomSync = 8|21<<8,
+            OnUserLogin = 26|8<<8,
+            OnPing = 26|26<<8,
+            OnVersion = 26|27<<8,
+            OnInventory = 20|20<<8,
+            OnLoginError = 26 | 3 << 8,
+            OnChat = 26 | 4 << 8,
+            OnBanned = 26 | 17 << 8,
+            OnPermaBanned = 26 | 18 << 8,
         }
     }
 
     public static class IgnoredMessage
     {
-        public enum Type : short
+        public enum Type : ushort
         {
             unknown4_3 = 4 | 3 << 8,
             unknown4_4 = 4 | 4 << 8,
@@ -67,7 +83,7 @@ namespace Cheeeeeeeeese
 
     public static class OutgoingMessage
     {
-        public enum Type : short
+        public enum Type : ushort
         {
             Login = 26|4<<8,
             Four20 = 4|20<<8,

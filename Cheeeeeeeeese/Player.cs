@@ -16,9 +16,9 @@ namespace Cheeeeeeeeese
     {
         #region Constants/Variables
 
-        public const int DefaultDelay = 1500;
-        public const int ReconnectDelay = 10000;
-        public const int Timeout = 15000;
+        public const int DefaultDelay = 500;
+        public const int ReconnectDelay = 15000;
+        public const int Timeout = 20000;
         public const int BufferSize = 65536;
         public const string DefaultRoom = "fromageville";
 
@@ -39,7 +39,6 @@ namespace Cheeeeeeeeese
         public string Password { get; set; }
         public int UserId { get; set; }
         public int UserLevel { get; set; }
-        public string IntendedRoom { get; set; }
         public string CurrentRoom { get; set; }
         public List<string> CurrentPlayers { get; set; }
         public List<string> CurrentShamans { get; set; }
@@ -66,7 +65,6 @@ namespace Cheeeeeeeeese
             Connected = false;
             this.Username = username;
             this.Password = password;
-            this.IntendedRoom = room;
             this.CurrentRoom = room;
             this.Server = server;
             this.Version = version;
@@ -106,6 +104,7 @@ namespace Cheeeeeeeeese
                 {
                     Tick();
                     Thread.Sleep(Delay);
+                    StartTime = DateTime.Now;
                 }
             }
 
@@ -224,8 +223,15 @@ namespace Cheeeeeeeeese
                     foreach (byte[] packet in packets)
                     {
                         // read packet
-                        short type = BitConverter.ToInt16(packet, 0);
-                        var splitPacket = RecvBuf.Skip(3).SplitStrings(Message.Delimiter, bytesRead - 3);
+                        ushort type = BitConverter.ToUInt16(packet, 0);
+
+                        List<String> splitPacket = new List<string>();
+
+                        if (packet.Length > 3)
+                            splitPacket = packet.Skip(3).SplitStrings(Message.Delimiter, packet.Length - 3);
+
+                        //var asdf = RecvBuf.Skip(3).ToUTF8();
+                        //var splitPacket = asdf.Split(new char[] { '1' }).ToList();
 
                         // find the message handler method for this message type
                         if (MessageHandlers.ContainsKey((IncomingMessage.Type)type))
@@ -233,7 +239,14 @@ namespace Cheeeeeeeeese
                             // found a handler, invoke it
                             var handler = MessageHandlers[(IncomingMessage.Type)type];
                             
+                            
                             //Console.WriteLine(Username + ": received " + Enum.GetName(typeof(IncomingMessage.Type), type));
+
+                            /*
+                            Console.WriteLine("[" + packet[0] + ", " + packet[1] + "] " + packet.Skip(3).ToArray().ToHexString());
+                            Console.WriteLine(String.Join(", ", splitPacket.ToArray()));
+                            Console.WriteLine("-----------------------------------------------");
+                            */
                             handler.Invoke(this, new object[] { splitPacket });
                         }
                         // ignored message type
@@ -246,7 +259,7 @@ namespace Cheeeeeeeeese
                         {
                             Console.WriteLine(Username + ": received unknown packet type " + RecvBuf[0] + ", " + RecvBuf[1]);
                             // invoke default handler
-                            MessageHandlers[IncomingMessage.Type.Default].Invoke(this, new object[] { splitPacket });
+                            //MessageHandlers[IncomingMessage.Type.Default].Invoke(this, new object[] { splitPacket });
                         }
                     }
                 }
@@ -258,7 +271,7 @@ namespace Cheeeeeeeeese
             {
                 if (Connected)
                 {
-                    Console.WriteLine(Username + ": Receive Got disconnected");
+                    Console.WriteLine(Username + ": Receive Got disconnected: " + e.Message + "\n" + e.InnerException);
                     Reconnect();
                 }
             }
@@ -362,7 +375,10 @@ namespace Cheeeeeeeeese
             {
                 Console.WriteLine(Username + ": I GOT DA CHEEZ!");
                 //Thread.Sleep(DefaultDelay);
-                Send(OutgoingMessage.Type.EnterHole, "0".ToByteArray());
+                // go in the hole if we're not a shaman
+                if (!CurrentShamans.Contains(Username))
+                    Send(OutgoingMessage.Type.EnterHole, "0".ToByteArray());
+                else Console.WriteLine("Can't win, we're the shaman");
             }
         }
 
@@ -371,59 +387,59 @@ namespace Cheeeeeeeeese
         {
             CurrentRoom = data[0];
             Console.WriteLine(Username + ": joined room " + CurrentRoom);
-            if (CurrentRoom != IntendedRoom)
-            {
-                Console.WriteLine(Username + ": Malformed room packet... wtf? - " + String.Join(", ", data.ToArray()));
-                //Console.WriteLine(Username + ": Reconnecting...");
-                //Reconnect();
-            }
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnRoomPlayers)]
         public void OnRoomPlayers(List<string> data)
         {
             CurrentPlayers = data;
-            var cleaned = CleanNames(data.Where(p => p.Contains("#")).ToList());
-            Console.WriteLine(Username + ": got player list: " + String.Join(", ", cleaned.ToArray()));
+            Console.WriteLine(Username + ": got player list: " + String.Join(", ", CleanNames(data).ToArray()));
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnRoomTransform)]
         public void OnRoomTransform(List<string> data)
         {
-            // this is totally not working, wtf
-            /*
-            Console.WriteLine(Username + ": Transform: " + String.Join(", ", data.ToArray()));
+            //Console.WriteLine(Username + ": Transform: " + String.Join(", ", data.ToArray()));
+
+            CurrentShamans = new List<string>();
             try
             {
                 if (data.Count == 1) // single shaman
                 {
-                    Console.WriteLine(Username + ": Shaman: " + GetPlayerName(data[0]));
+                    CurrentShamans.Add(GetPlayerName(data[0]));
+                    Console.WriteLine(Username + ": Shaman: " + CurrentShamans[0]);
                 }
                 else
                 {
-                    Console.WriteLine(Username + ": Shamans: " + GetPlayerName(data[0]) + ", " + GetPlayerName(data[1]));
+                    CurrentShamans.Add(GetPlayerName(data[0]));
+                    CurrentShamans.Add(GetPlayerName(data[1]));
+                    Console.WriteLine(Username + ": Shamans: " + CurrentShamans[0] + ", " + CurrentShamans[1]);
                 }
             }
             catch (Exception)
             {
                 Console.WriteLine(Username + ": Error reading shamans");
             }
-            */
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnRoomSync)]
         public void OnRoomSync(List<string> data)
         {
-            //var cleaned = CleanNames(data.Where(p => p.Contains("#")).ToList());
-            var numPlayers = CurrentPlayers.Distinct().Where(p => p.Contains("#")).Count();
-            if (numPlayers == 0 || numPlayers > 1)
+            if (CurrentPlayers.Count < 2)
             {
-                Console.WriteLine(Username + ": " + numPlayers + " (?) players present: Grabbing cheese");
+                Console.WriteLine(Username + ": All alone, can't get any cheese =(");
+                return;
+            }
+            else if (CurrentShamans.Contains(Username))
+            {
+                Console.WriteLine(Username + ": You are a shaman, can't get any cheese =(");
+            }
+            else
+            {
+                Console.WriteLine(Username + ": " + CurrentPlayers.Count + " players present: Grabbing cheese");
                 //Thread.Sleep(rand.Next(3000, 7000));
                 Send(OutgoingMessage.Type.GrabCheese);
             }
-            else
-                Console.WriteLine(Username + ": All alone, can't get any cheese =(");
         }
 
         [BotMessageHandler(IncomingMessage.Type.OnUserLogin)]
@@ -514,12 +530,6 @@ namespace Cheeeeeeeeese
             }
             //var duration = Math.Floor((Number(_local3[1]) / 3600000));
         }
-
-        [BotMessageHandler(IncomingMessage.Type.Default)]
-        public void Default(List<string> data)
-        {
-
-        }
         #endregion
 
         public void SendVersion()
@@ -544,7 +554,6 @@ namespace Cheeeeeeeeese
 
         public string GetPlayerName(string id)
         {
-            id = CleanName(id);
             try
             {
                 return CleanName(CurrentPlayers.First(chunk => chunk.Contains(id))).Replace("*", "");
@@ -561,13 +570,14 @@ namespace Cheeeeeeeeese
         }
         public List<string> CleanNames(List<string> names)
         {
+            var Cleaned = new List<string>();
             for (int i = 0; i < names.Count; i++)
             {
                 if (names[i].Contains("#"))
-                    names[i] = CleanName(names[i]);
+                    Cleaned.Add(CleanName(names[i]));
             }
 
-            return names;
+            return Cleaned;
         }
 
         public void SetupMessageHandlers()
