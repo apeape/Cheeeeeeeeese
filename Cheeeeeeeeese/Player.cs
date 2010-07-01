@@ -167,7 +167,6 @@ namespace Cheeeeeeeeese
                     }*/
                     Thread.Sleep(Delay);
                 }
-
                 else
                 {
                     Tick();
@@ -185,6 +184,7 @@ namespace Cheeeeeeeeese
             if (Connected)
             {
                 NetStream.Close();
+                NetStream.Dispose();
                 Connected = false;
                 Thread.Sleep(ReconnectDelay);
                 Connect();
@@ -233,17 +233,15 @@ namespace Cheeeeeeeeese
                 NetStream.ReadTimeout = Timeout;
                 NetStream.WriteTimeout = Timeout;
 
-                Connected = true;
-
-                SendVersion();
                 SendPing = DateTime.MinValue;
                 LastPing = DateTime.MinValue;
                 SendWin = DateTime.MinValue;
-
+                
+                SendVersion();
                 NetStream.BeginRead(RecvBuf, 0, RecvBuf.Length, new AsyncCallback(Receive), this);
-
-                return true;
             }
+
+            return true;
         }
 
         public void Tick()
@@ -254,7 +252,7 @@ namespace Cheeeeeeeeese
             var elapsed = (now - LastPing).TotalSeconds;
             if (elapsed >= 10)
             {
-                Send(OutgoingMessage.Type.CheckInventory);
+                //Send(OutgoingMessage.Type.CheckInventory);
                 Send(OutgoingMessage.Type.PingTime, (elapsed * 1000).ToString().ToByteArray());
                 LastPing = now;
                 Console.WriteLine(Username + ": <-Pong");
@@ -269,7 +267,6 @@ namespace Cheeeeeeeeese
 
             if (SendWin != DateTime.MinValue && (now - SendWin).TotalSeconds >= 1)
             {
-                //Send(OutgoingMessage.Type.CheckInventory);
                 SendWin = DateTime.MinValue;
                 Console.WriteLine(Username + ": Sending Win");
                 Send(OutgoingMessage.Type.Win, new byte[] { 0 });
@@ -280,7 +277,7 @@ namespace Cheeeeeeeeese
 
         public void Receive(IAsyncResult ar)
         {
-            if (!Connected) return;
+            //if (!Connected) return;
             try
             {
                 // Read data from the remote device.
@@ -378,7 +375,7 @@ namespace Cheeeeeeeeese
 
         public void Send(params object[] args)
         {
-            if (!Connected) return;
+            //if (!Connected) return;
 
             List<byte> data = new List<byte>();
 
@@ -418,7 +415,7 @@ namespace Cheeeeeeeeese
             try
             {
                 NetStream.Write(data.ToArray(), 0, data.Count());
-                CMDTEC++;
+                if (CMDTEC != 0) CMDTEC++;
             }
             catch (Exception e)
             {
@@ -482,8 +479,11 @@ namespace Cheeeeeeeeese
                 //Thread.Sleep(DefaultDelay);
                 // go in the hole if we're not a shaman
                 if (!CurrentShamans.Contains(Username))
+                {
                     Send(OutgoingMessage.Type.EnterHole, "0".ToByteArray());
-                else Console.WriteLine(Username + ": Can't win yet, we're the shaman");
+                    Send(OutgoingMessage.Type.CheckInventory);
+                }
+                //else Console.WriteLine(Username + ": Can't win yet, we're the shaman");
             }
             // remove whoever got it from the players without cheese list
             else
@@ -492,11 +492,13 @@ namespace Cheeeeeeeeese
                 if (PlayersWithoutCheese.Count == 1 && PlayersWithoutCheese.Where(p => p.Contains(Username)).Count() == 1 && CurrentShamans.Contains(Username))
                 {
                     // finally we can finish!
-                    Console.WriteLine(Username + ": Everyone else is done, going to the hole!");
+                    Thread.Sleep(400);
+                    //Console.WriteLine(Username + ": Everyone else is done, going to the hole!");
                     Send(OutgoingMessage.Type.EnterHole, "0".ToByteArray());
+                    Send(OutgoingMessage.Type.CheckInventory);
                 }
-                else
-                    Console.WriteLine(Username + ": " + PlayersWithoutCheese.Count + " players still don't have the cheese!");
+                //else
+                    //Console.WriteLine(Username + ": " + PlayersWithoutCheese.Count + " players still don't have the cheese!");
             }
         }
 
@@ -557,7 +559,7 @@ namespace Cheeeeeeeeese
             }*/
             else
             {
-                Console.WriteLine(Username + ": " + CurrentPlayers.Count + " players present: Grabbing cheese");
+                //Console.WriteLine(Username + ": " + CurrentPlayers.Count + " players present: Grabbing cheese");
                 //Thread.Sleep(rand.Next(3000, 7000));
                 Send(OutgoingMessage.Type.GrabCheese);
             }
@@ -567,12 +569,14 @@ namespace Cheeeeeeeeese
             if (ShowOffMode)
             {
                 int proc = rand.Next(0, 100);
-                if (proc < 25)
+                if (proc < 20)
                     FireWorks();
-                else if (proc > 25 && proc < 50)
+                else if (proc > 20 && proc < 40)
                     Garbage();
-                else if (proc > 50 && proc < 75)
+                else if (proc > 40 && proc < 60)
                     Cheeeeese();
+                else if (proc > 60 && proc < 80)
+                    Shoveballs();
                 else
                     Spiral(Objects.PurpleArrow);
             }
@@ -594,7 +598,7 @@ namespace Cheeeeeeeeese
                 {
                     Console.WriteLine(Username + ": doing spiral");
 
-                    VerticalObjectWipe(60, false, Objects.PurpleArrow);
+                    VerticalObjectWipe(60, false, Objects.PurpleArrow, 35, 20);
                     Thread.Sleep(600);
 
                     double anglemod = 0;
@@ -608,9 +612,9 @@ namespace Cheeeeeeeeese
                             int y = stageCenterY + (int)(radius * Math.Sin(angle));
 
                             if (obj == Objects.PurpleArrow)
-                                PlaceArrow("0", x.ToString(), y.ToString(), angle.ToString(), false);
+                                PlaceArrow(obj.ToString("D"), x.ToString(), y.ToString(), angle.ToString(), false);
                             else
-                                PlaceObject(obj.ToString(), x.ToString(), y.ToString(), angle.ToString(), false);
+                                PlaceObject(obj.ToString("D"), x.ToString(), y.ToString(), angle.ToString(), false);
 
                             Thread.Sleep(10);
                         }
@@ -620,33 +624,33 @@ namespace Cheeeeeeeeese
             }
         }
 
-        public void VerticalObjectWipe(int delay, bool TopDown, Objects obj)
+        public void VerticalObjectWipe(int delay, bool TopDown, Objects obj, int xSpacing, int ySpacing)
         {
             if (TopDown)
             {
-                for (int y = 50; y <= 400; y += 20)
+                for (int y = 50; y <= 400; y += ySpacing)
                 {
-                    for (int x = 25; x < 850; x += 28)
+                    for (int x = 25; x < 850; x += xSpacing)
                     {
                         if (obj == Objects.PurpleArrow)
-                            PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            PlaceArrow(obj.ToString("D"), x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
                         else
-                            PlaceObject(obj.ToString(), x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            PlaceObject(obj.ToString("D"), x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
 
                     }
-                    Thread.Sleep(60);
+                    Thread.Sleep(delay);
                 }
             }
             else
             {
-                for (int y = 400; y >= 50; y -= 20)
+                for (int y = 400; y >= 50; y -= ySpacing)
                 {
-                    for (int x = 25; x < 850; x += 35)
+                    for (int x = 25; x < 850; x += xSpacing)
                     {
                         if (obj == Objects.PurpleArrow)
-                            PlaceArrow("0", x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            PlaceArrow(obj.ToString("D"), x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
                         else
-                            PlaceObject(obj.ToString(), x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
+                            PlaceObject(obj.ToString("D"), x.ToString(), y.ToString(), (x + y % 360).ToString(), false);
                     }
                     Thread.Sleep(delay);
                 }
@@ -663,7 +667,7 @@ namespace Cheeeeeeeeese
                     int x;
                     int y;
 
-                    VerticalObjectWipe(100, false, Objects.PurpleArrow);
+                    VerticalObjectWipe(100, false, Objects.PurpleArrow, 35, 20);
 
                     x = rand.Next(25, 850);
                     y = rand.Next(0, 400);
@@ -682,6 +686,34 @@ namespace Cheeeeeeeeese
             }
         }
 
+        public void Shoveballs()
+        {
+            lock (PartyTimeLock)
+            {
+                if (CurrentShamans.Contains(Username))
+                {
+                    Console.WriteLine(Username + ": doing shoveball avalanch");
+                    int x;
+                    int y;
+
+                    VerticalObjectWipe(100, false, Objects.PurpleArrow, 35, 20);
+
+                    x = rand.Next(25, 850);
+                    y = rand.Next(0, 400);
+
+                    for (int i = 0; i < 10; i++)
+                    {
+                        for (int j = 0; j < 25; j++)
+                        {
+                            PlaceObject(rand.Next(17, 20).ToString(), (x = rand.Next(25, 850)).ToString(), (y = rand.Next(0, 100)).ToString(), (x + y % 360).ToString(), false);
+                            Thread.Sleep(80);
+                        }
+                        Thread.Sleep(300);
+                    }
+                }
+            }
+        }
+
         public void Cheeeeese()
         {
             lock (PartyTimeLock)
@@ -692,7 +724,7 @@ namespace Cheeeeeeeeese
                     int x;
                     int y;
 
-                    VerticalObjectWipe(100, false, Objects.PurpleArrow);
+                    VerticalObjectWipe(100, false, Objects.PurpleArrow, 35, 20);
 
                     x = rand.Next(25, 850);
                     y = rand.Next(0, 400);
@@ -719,25 +751,28 @@ namespace Cheeeeeeeeese
                     Console.WriteLine(Username + ": doing fireworks");
                     for (int i = 0; i < 15; i++)
                     {
-                        VerticalObjectWipe(60, false, Objects.PurpleArrow);
+                        VerticalObjectWipe(60, false, Objects.PurpleArrow, 35, 20);
                         Thread.Sleep(600);
 
-                        VerticalObjectWipe(60, true, Objects.TealDot);
+                        VerticalObjectWipe(60, true, Objects.TealDot, 35, 20);
                         Thread.Sleep(300);
-                        
-                        VerticalObjectWipe(60, false, Objects.PurpleArrow);
+
+                        VerticalObjectWipe(60, false, Objects.PurpleArrow, 35, 20);
                         Thread.Sleep(600);
 
-                        VerticalObjectWipe(60, true, Objects.YellowDot);
+                        VerticalObjectWipe(60, true, Objects.YellowDot, 28, 20);
                         Thread.Sleep(300);
 
-                        VerticalObjectWipe(60, false, Objects.RedDot);
+                        VerticalObjectWipe(60, false, Objects.RedDot, 23, 20);
                         Thread.Sleep(300);
 
-                        VerticalObjectWipe(60, true, Objects.PurpleArrow);
+                        VerticalObjectWipe(60, true, Objects.PurpleArrow, 35, 20);
                         Thread.Sleep(600);
 
-                        VerticalObjectWipe(60, false, Objects.TealDot);
+                        VerticalObjectWipe(60, false, Objects.TealDot, 25, 20);
+                        Thread.Sleep(300);
+
+                        VerticalObjectWipe(60, true, Objects.RedDot, 40, 20);
                         Thread.Sleep(300);
                     }
 
@@ -809,6 +844,8 @@ namespace Cheeeeeeeeese
             CMDTEC = Int32.Parse(data[2]);
 
             Console.WriteLine(Username + ": " + data[0] + " players currently online");
+            Connected = true;
+
             SendLogin();
         }
 
